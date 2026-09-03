@@ -55,8 +55,9 @@ export default function SignInPage() {
 
   return (
     <main className="auth-shell grid min-h-screen place-items-center px-5 py-10 text-foreground">
-      <section className="auth-card w-full max-w-[440px] rounded-[28px] p-7 sm:p-10">
-        <div className="mb-9"><Brand /></div>
+      <section className="auth-card grid w-full max-w-[920px] overflow-hidden rounded-[32px] md:grid-cols-[.9fr_1.1fr]">
+        <div className="hidden flex-col justify-between bg-[#173c34] p-10 text-white md:flex"><Brand compact /><div><p className="text-sm font-medium text-[#8fd0bd]">A little Spanish, every day.</p><p className="mt-4 text-4xl font-semibold leading-[1.02] tracking-[-.055em]">Speak with more<br />confidence.</p></div><p className="text-sm text-white/50">Personal practice that remembers your level.</p></div>
+        <div className="p-7 sm:p-10"><div className="mb-9"><Brand /></div>
         <p className="eyebrow">Welcome back</p>
         <h1 className="mt-2 text-3xl font-semibold tracking-[-.045em]">{mode === 'sign-in' ? 'Continue learning' : 'Create your account'}</h1>
         <p className="mt-2 text-base leading-relaxed text-muted-foreground">Use your email and password to keep your Spanish practice connected.</p>
@@ -71,7 +72,7 @@ export default function SignInPage() {
           <div className="space-y-2"><Label htmlFor="password">Password</Label><Input id="password" name="password" type="password" autoComplete={mode === 'sign-in' ? 'current-password' : 'new-password'} minLength={6} value={password} onChange={(event) => setPassword(event.target.value)} required className="h-12 rounded-[14px] bg-[#f7f7f8] px-4" /></div>
           {message && <p role="status" className="rounded-xl bg-[#fff4dc] px-4 py-3 text-sm leading-relaxed text-[#77551a]">{message}</p>}
           <Button type="submit" disabled={loading} className="h-12 w-full rounded-full text-base font-bold">{loading ? 'Please wait…' : mode === 'sign-in' ? 'Sign in' : 'Create account'}</Button>
-        </form>
+        </form></div>
       </section>
     </main>
   );
