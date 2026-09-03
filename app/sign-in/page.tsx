@@ -56,7 +56,7 @@ export default function SignInPage() {
   return (
     <main className="auth-shell grid min-h-screen place-items-center px-5 py-10 text-foreground">
       <section className="auth-card grid w-full max-w-[920px] overflow-hidden rounded-[32px] md:grid-cols-[.9fr_1.1fr]">
-        <div className="hidden flex-col justify-between bg-[#173c34] p-10 text-white md:flex"><Brand compact /><div><p className="text-sm font-medium text-[#8fd0bd]">A little Spanish, every day.</p><p className="mt-4 text-4xl font-semibold leading-[1.02] tracking-[-.055em]">Speak with more<br />confidence.</p></div><p className="text-sm text-white/50">Personal practice that remembers your level.</p></div>
+        <div className="relative hidden min-h-[610px] overflow-hidden bg-[#173c34] p-10 text-white md:block"><div className="relative z-10"><Brand compact /><p className="mt-14 text-sm font-medium text-[#8fd0bd]">A little Spanish, every day.</p><p className="mt-4 text-4xl font-semibold leading-[1.02] tracking-[-.055em]">Speak with more<br />confidence.</p></div><div className="absolute -bottom-16 -right-20 size-80 rounded-full bg-[#245a4e] blur-3xl" /><img src="/brand/kurtes-coach.png" alt="" className="absolute -bottom-4 left-1/2 z-10 h-[350px] max-w-none -translate-x-1/2 drop-shadow-[0_20px_25px_rgba(0,0,0,.18)]" /><p className="absolute bottom-8 left-10 z-20 text-sm text-white/55">Personal practice that remembers your level.</p></div>
         <div className="p-7 sm:p-10"><div className="mb-9"><Brand /></div>
         <p className="eyebrow">Welcome back</p>
         <h1 className="mt-2 text-3xl font-semibold tracking-[-.045em]">{mode === 'sign-in' ? 'Continue learning' : 'Create your account'}</h1>
