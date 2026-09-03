@@ -1,0 +1,42 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background); --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans); --font-heading: var(--font-heading);
+  --color-card: var(--card); --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary); --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary); --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted); --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent); --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border); --color-input: var(--input); --color-ring: var(--ring);
+  --radius-sm: .5rem; --radius-md: .75rem; --radius-lg: 1rem; --radius-xl: 1.5rem;
+}
+
+:root {
+  --background: #f8f7f3; --foreground: #17322c; --card: #ffffff; --card-foreground: #17322c;
+  --primary: #173c34; --primary-foreground: #ffffff; --secondary: #ecebe5; --secondary-foreground: #17322c;
+  --muted: #efeee9; --muted-foreground: #6c7a75; --accent: #e8f3ef; --accent-foreground: #173c34;
+  --border: #e5e3dc; --input: #dedbd3; --ring: #3f7568; --font-heading: var(--font-geist-sans);
+}
+
+.dark { --background:#10241f; --foreground:#f7f6f0; --card:#17342d; --card-foreground:#f7f6f0; --primary:#f4bd4e; --primary-foreground:#17322c; --secondary:#21463d; --secondary-foreground:#fff; --muted:#21463d; --muted-foreground:#a9bbb5; --accent:#295248; --accent-foreground:#fff; --border:#315148; --input:#3b5d54; --ring:#8fd0bd; }
+
+@layer base { * { @apply border-border outline-ring/50; } html { scroll-behavior:smooth; } body { @apply bg-background text-foreground; font-family:var(--font-geist-sans),sans-serif; } button,a { -webkit-tap-highlight-color:transparent; } }
+
+@layer components {
+  .nav-link { @apply rounded-full px-4 py-2 text-sm font-semibold text-muted-foreground transition hover:bg-white hover:text-foreground; }
+  .nav-link-active { @apply bg-white text-foreground shadow-[0_2px_12px_rgba(23,50,44,.06)]; }
+  .icon-button { @apply grid size-10 place-items-center rounded-full text-muted-foreground transition hover:bg-white hover:text-foreground; }
+  .eyebrow { @apply text-xs font-bold uppercase tracking-[.14em] text-muted-foreground; }
+  .word-dot { @apply size-2.5 shrink-0 rounded-full; }
+  .word-dot.gold { @apply bg-[#f4bd4e]; } .word-dot.blue { @apply bg-[#71a9d6]; } .word-dot.coral { @apply bg-[#ed816c]; }
+  .practice-card { @apply flex items-center gap-4 rounded-[22px] border border-border bg-white p-4 text-left transition hover:-translate-y-0.5 hover:shadow-[0_10px_30px_rgba(23,50,44,.07)]; }
+  .practice-icon { @apply grid size-11 shrink-0 place-items-center rounded-2xl; }
+  .practice-icon.coral { @apply bg-[#ffe5df] text-[#c85843]; } .practice-icon.blue { @apply bg-[#e2eff8] text-[#3976a7]; } .practice-icon.gold { @apply bg-[#fff1d2] text-[#c37a1d]; }
+}
+
+@media (prefers-reduced-motion:no-preference) { .practice-card { animation:appear .45s ease-out both; } @keyframes appear { from { opacity:0; transform:translateY(8px); } } }
