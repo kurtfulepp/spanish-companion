@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
-import { Check, Settings } from 'lucide-react';
+import { Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -52,7 +52,7 @@ export function ProfileDialog({ onProfileChange, mobile = false }: { onProfileCh
     else {
       const nextProfile = { displayName: displayName.trim(), proficiencyLevel };
       onProfileChange(nextProfile);
-      setMessage('Profile saved');
+      setOpen(false);
     }
     setSaving(false);
   }
@@ -65,7 +65,7 @@ export function ProfileDialog({ onProfileChange, mobile = false }: { onProfileCh
         <form onSubmit={saveProfile} className="space-y-5">
           <div className="space-y-2"><Label htmlFor="display-name">Display name <span className="font-normal text-muted-foreground">(optional)</span></Label><Input id="display-name" value={displayName} onChange={(event) => setDisplayName(event.target.value)} maxLength={80} placeholder="How should Claro address you?" disabled={loading} className="h-12 rounded-xl" /></div>
           <div className="space-y-2"><Label htmlFor="proficiency-level">Current Spanish level</Label><Select value={proficiencyLevel} onValueChange={(value) => setProficiencyLevel(value ?? '')} disabled={loading}><SelectTrigger id="proficiency-level" className="h-12 w-full rounded-xl px-3"><SelectValue>{proficiencyLevel || 'Choose a level'}</SelectValue></SelectTrigger><SelectContent align="start">{levels.map((level) => <SelectItem key={level} value={level}>{level}</SelectItem>)}</SelectContent></Select></div>
-          {message && <p role="status" className={`flex items-center gap-2 rounded-xl px-4 py-3 text-sm ${message === 'Profile saved' ? 'bg-[#e8f3ef] text-[#315d52]' : 'bg-[#fff1ed] text-[#8b4337]'}`}>{message === 'Profile saved' && <Check className="size-4" />}{message}</p>}
+          {message && <p role="alert" className="rounded-xl bg-[#fff1ed] px-4 py-3 text-sm text-[#8b4337]">{message}</p>}
           <DialogFooter className="mx-0 mb-0 rounded-none border-0 bg-transparent p-0"><Button type="submit" disabled={loading || saving} className="h-11 rounded-full px-6 font-bold">{saving ? 'Saving…' : 'Save profile'}</Button></DialogFooter>
         </form>
       </DialogContent>
