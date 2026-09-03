@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { MessageCircle } from 'lucide-react';
+import { Brand } from '@/components/brand';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -56,7 +56,7 @@ export default function SignInPage() {
   return (
     <main className="grid min-h-screen place-items-center bg-background px-5 py-10 text-foreground">
       <section className="w-full max-w-[440px] rounded-[30px] border border-border bg-white p-7 shadow-[0_24px_70px_rgba(23,50,44,.09)] sm:p-10">
-        <div className="mb-9 flex items-center gap-3"><span className="grid size-10 place-items-center rounded-[14px] bg-primary text-primary-foreground"><MessageCircle className="size-5 fill-current" /></span><span className="text-xl font-bold tracking-[-0.04em]">claro.</span></div>
+        <div className="mb-9"><Brand /></div>
         <p className="eyebrow">Welcome back</p>
         <h1 className="mt-2 text-3xl font-semibold tracking-[-.045em]">{mode === 'sign-in' ? 'Continue learning' : 'Create your account'}</h1>
         <p className="mt-2 text-base leading-relaxed text-muted-foreground">Use your email and password to keep your Spanish practice connected.</p>

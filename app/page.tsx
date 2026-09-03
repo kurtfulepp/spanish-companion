@@ -1,8 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { ArrowRight, BookOpen, Check, ChevronDown, Flame, Headphones, Menu, MessageCircle, Mic, MoreHorizontal, Play, Search, Sparkles, Target, Volume2, X } from 'lucide-react';
+import { ArrowRight, BookOpen, Check, ChevronDown, Flame, Headphones, Menu, Mic, MoreHorizontal, Play, Search, Sparkles, Target, Volume2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Brand } from '@/components/brand';
 import { ProfileDialog, type LearnerProfile } from '@/components/profile-dialog';
 import { createClient } from '@/lib/supabase/client';
 
@@ -52,12 +53,12 @@ export default function Home() {
   return (
     <main className="min-h-screen overflow-hidden bg-background text-foreground">
       <header className="mx-auto flex h-20 max-w-[1400px] items-center justify-between px-5 sm:px-8 lg:px-12">
-        <a href="#" className="flex items-center gap-3" aria-label="Claro home"><span className="grid size-10 place-items-center rounded-[14px] bg-primary text-primary-foreground shadow-[0_7px_20px_rgba(30,63,56,.22)]"><MessageCircle className="size-5 fill-current" /></span><span className="font-heading text-xl font-bold tracking-[-0.04em]">claro.</span></a>
+        <a href="#" aria-label="KurtES home"><Brand /></a>
         <nav className="hidden items-center gap-1 md:flex" aria-label="Main navigation"><a className="nav-link nav-link-active" href="#practice">Practice</a><a className="nav-link" href="#vocabulary">Vocabulary</a><a className="nav-link" href="#progress">Progress</a></nav>
         <div className="hidden items-center gap-3 sm:flex"><button className="icon-button" aria-label="Search"><Search className="size-[18px]" /></button><ProfileDialog onProfileChange={updateProfile} />{process.env.NODE_ENV === 'development' && activeEmail && <span className="max-w-44 truncate rounded-full bg-[#e8f3ef] px-3 py-1.5 text-xs font-semibold text-[#315d52]" title="Development: active Supabase user">{activeEmail}</span>}<button onClick={signOut} className="rounded-full border border-border bg-white px-3 py-2 text-sm font-semibold text-muted-foreground transition hover:text-foreground">Sign out</button><span className="grid size-10 place-items-center rounded-full bg-[#f2b544] text-sm font-bold text-[#263b35] ring-4 ring-white">{(profile.displayName || activeEmail)?.slice(0, 2).toUpperCase() ?? 'KC'}</span></div>
         <button className="icon-button sm:hidden" aria-label="Open menu" onClick={() => setMenuOpen(true)}><Menu className="size-5" /></button>
       </header>
-      {menuOpen && <div className="fixed inset-0 z-50 bg-[#173c34] p-6 text-white sm:hidden"><div className="flex items-center justify-between"><span className="text-xl font-bold">claro.</span><button onClick={() => setMenuOpen(false)} aria-label="Close menu"><X /></button></div><nav className="mt-16 grid gap-6 text-3xl font-semibold"><a href="#practice">Practice</a><a href="#vocabulary">Vocabulary</a><a href="#progress">Progress</a><ProfileDialog onProfileChange={updateProfile} mobile /><button onClick={signOut} className="text-left text-[#f4bd4e]">Sign out</button></nav>{process.env.NODE_ENV === 'development' && activeEmail && <p className="absolute bottom-7 left-6 right-6 truncate text-sm text-white/60">Active user: {activeEmail}</p>}</div>}
+      {menuOpen && <div className="fixed inset-0 z-50 bg-[#173c34] p-6 text-white sm:hidden"><div className="flex items-center justify-between"><Brand compact /><button onClick={() => setMenuOpen(false)} aria-label="Close menu"><X /></button></div><nav className="mt-16 grid gap-6 text-3xl font-semibold"><a href="#practice">Practice</a><a href="#vocabulary">Vocabulary</a><a href="#progress">Progress</a><ProfileDialog onProfileChange={updateProfile} mobile /><button onClick={signOut} className="text-left text-[#f4bd4e]">Sign out</button></nav>{process.env.NODE_ENV === 'development' && activeEmail && <p className="absolute bottom-7 left-6 right-6 truncate text-sm text-white/60">Active user: {activeEmail}</p>}</div>}
 
       <section id="practice" className="mx-auto grid max-w-[1400px] items-stretch gap-6 px-5 pb-8 sm:px-8 lg:grid-cols-[1.55fr_.85fr] lg:px-12">
         <div className="relative min-h-[600px] overflow-hidden rounded-[32px] bg-[#173c34] px-6 py-8 text-white sm:px-10 sm:py-10 lg:min-h-[640px] lg:px-14 lg:py-12">
