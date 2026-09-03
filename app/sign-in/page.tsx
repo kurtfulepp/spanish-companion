@@ -54,21 +54,21 @@ export default function SignInPage() {
   }
 
   return (
-    <main className="grid min-h-screen place-items-center bg-background px-5 py-10 text-foreground">
-      <section className="w-full max-w-[440px] rounded-[30px] border border-border bg-white p-7 shadow-[0_24px_70px_rgba(23,50,44,.09)] sm:p-10">
+    <main className="auth-shell grid min-h-screen place-items-center px-5 py-10 text-foreground">
+      <section className="auth-card w-full max-w-[440px] rounded-[28px] p-7 sm:p-10">
         <div className="mb-9"><Brand /></div>
         <p className="eyebrow">Welcome back</p>
         <h1 className="mt-2 text-3xl font-semibold tracking-[-.045em]">{mode === 'sign-in' ? 'Continue learning' : 'Create your account'}</h1>
         <p className="mt-2 text-base leading-relaxed text-muted-foreground">Use your email and password to keep your Spanish practice connected.</p>
 
-        <div className="mt-7 grid grid-cols-2 rounded-full bg-secondary p-1" aria-label="Authentication mode">
-          <button type="button" onClick={() => changeMode('sign-in')} className={`rounded-full px-4 py-2.5 text-sm font-semibold transition ${mode === 'sign-in' ? 'bg-white text-foreground shadow-sm' : 'text-muted-foreground'}`}>Sign in</button>
-          <button type="button" onClick={() => changeMode('sign-up')} className={`rounded-full px-4 py-2.5 text-sm font-semibold transition ${mode === 'sign-up' ? 'bg-white text-foreground shadow-sm' : 'text-muted-foreground'}`}>Sign up</button>
+        <div className="mt-7 grid grid-cols-2 rounded-xl bg-secondary p-1" aria-label="Authentication mode">
+          <button type="button" onClick={() => changeMode('sign-in')} className={`rounded-[10px] px-4 py-2.5 text-sm font-semibold transition ${mode === 'sign-in' ? 'bg-white text-foreground shadow-sm' : 'text-muted-foreground'}`}>Sign in</button>
+          <button type="button" onClick={() => changeMode('sign-up')} className={`rounded-[10px] px-4 py-2.5 text-sm font-semibold transition ${mode === 'sign-up' ? 'bg-white text-foreground shadow-sm' : 'text-muted-foreground'}`}>Sign up</button>
         </div>
 
         <form onSubmit={submit} className="mt-7 space-y-5">
-          <div className="space-y-2"><Label htmlFor="email">Email</Label><Input id="email" name="email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} required className="h-12 rounded-xl" /></div>
-          <div className="space-y-2"><Label htmlFor="password">Password</Label><Input id="password" name="password" type="password" autoComplete={mode === 'sign-in' ? 'current-password' : 'new-password'} minLength={6} value={password} onChange={(event) => setPassword(event.target.value)} required className="h-12 rounded-xl" /></div>
+          <div className="space-y-2"><Label htmlFor="email">Email</Label><Input id="email" name="email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} required className="h-12 rounded-[14px] bg-[#f7f7f8] px-4" /></div>
+          <div className="space-y-2"><Label htmlFor="password">Password</Label><Input id="password" name="password" type="password" autoComplete={mode === 'sign-in' ? 'current-password' : 'new-password'} minLength={6} value={password} onChange={(event) => setPassword(event.target.value)} required className="h-12 rounded-[14px] bg-[#f7f7f8] px-4" /></div>
           {message && <p role="status" className="rounded-xl bg-[#fff4dc] px-4 py-3 text-sm leading-relaxed text-[#77551a]">{message}</p>}
           <Button type="submit" disabled={loading} className="h-12 w-full rounded-full text-base font-bold">{loading ? 'Please wait…' : mode === 'sign-in' ? 'Sign in' : 'Create account'}</Button>
         </form>
