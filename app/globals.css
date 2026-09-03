@@ -8,6 +8,7 @@
   --color-background: var(--background); --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans); --font-heading: var(--font-heading);
   --color-card: var(--card); --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover); --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary); --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary); --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted); --color-muted-foreground: var(--muted-foreground);
@@ -18,12 +19,13 @@
 
 :root {
   --background: #f8f7f3; --foreground: #17322c; --card: #ffffff; --card-foreground: #17322c;
+  --popover: #ffffff; --popover-foreground: #17322c;
   --primary: #173c34; --primary-foreground: #ffffff; --secondary: #ecebe5; --secondary-foreground: #17322c;
   --muted: #efeee9; --muted-foreground: #6c7a75; --accent: #e8f3ef; --accent-foreground: #173c34;
   --border: #e5e3dc; --input: #dedbd3; --ring: #3f7568; --font-heading: var(--font-geist-sans);
 }
 
-.dark { --background:#10241f; --foreground:#f7f6f0; --card:#17342d; --card-foreground:#f7f6f0; --primary:#f4bd4e; --primary-foreground:#17322c; --secondary:#21463d; --secondary-foreground:#fff; --muted:#21463d; --muted-foreground:#a9bbb5; --accent:#295248; --accent-foreground:#fff; --border:#315148; --input:#3b5d54; --ring:#8fd0bd; }
+.dark { --background:#10241f; --foreground:#f7f6f0; --card:#17342d; --card-foreground:#f7f6f0; --popover:#17342d; --popover-foreground:#f7f6f0; --primary:#f4bd4e; --primary-foreground:#17322c; --secondary:#21463d; --secondary-foreground:#fff; --muted:#21463d; --muted-foreground:#a9bbb5; --accent:#295248; --accent-foreground:#fff; --border:#315148; --input:#3b5d54; --ring:#8fd0bd; }
 
 @layer base { * { @apply border-border outline-ring/50; } html { scroll-behavior:smooth; } body { @apply bg-background text-foreground; font-family:var(--font-geist-sans),sans-serif; } button,a { -webkit-tap-highlight-color:transparent; } }
 
