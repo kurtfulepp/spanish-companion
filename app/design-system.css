@@ -1,0 +1,32 @@
+/* KurtES visual tokens. Reference: vocabulary overview, refined in d0f6133.
+   Usage and voice standards: docs/design-system.md. */
+:root {
+  --brand-canvas: #f6f1e8;
+  --brand-surface: #fffdfa;
+  --brand-coral: #e9513d;
+  --brand-orange: #ef6a43;
+  --brand-marigold: #f4a43b;
+  --brand-gold: #f4bd4e;
+  --brand-gold-light: #ffd76a;
+  --brand-yellow: #ffd45b;
+  --brand-turquoise: #38b9b0;
+  --brand-ink: #7f302b;
+  --brand-ink-strong: #7b211b;
+  --brand-ink-muted: #79564c;
+  --brand-peach: #fff0e8;
+  --brand-cream: #fff4dc;
+  --brand-border: #e1d9cc;
+  --brand-avatar-border: var(--brand-gold);
+  --brand-hero-fill: linear-gradient(115deg, var(--brand-coral) 0%, var(--brand-orange) 48%, var(--brand-marigold) 100%);
+  --brand-logo-fill: linear-gradient(180deg, var(--brand-gold-light) 0%, var(--brand-gold) 100%);
+  --brand-hero-shadow: 0 14px 38px rgba(199,69,43,.2);
+  --brand-art-shadow: 0 18px 20px rgba(118,85,20,.14);
+  --brand-radius-hero: 24px;
+  --brand-radius-card: 26px;
+  --brand-content-width: 1360px;
+}
+
+.brand-hero { position:relative; isolation:isolate; overflow:hidden; border-radius:var(--brand-radius-hero); background:var(--brand-hero-fill); color:white; box-shadow:var(--brand-hero-shadow); }
+.brand-orbit { position:absolute; z-index:-1; width:10rem; height:10rem; border-radius:50%; pointer-events:none; }
+.brand-orbit-turquoise { right:-2rem; top:-4rem; background:var(--brand-turquoise); opacity:.45; }
+.brand-orbit-yellow { right:6rem; bottom:-5rem; background:var(--brand-yellow); opacity:.55; }

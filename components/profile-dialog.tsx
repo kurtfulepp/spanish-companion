@@ -1,6 +1,7 @@
+/* oxlint-disable next/no-img-element */
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Check, Clock3, MapPin, Settings, Volume2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -14,7 +15,18 @@ import { playSpanishSpeech, type VoicePreference } from '@/lib/speech';
 export type LearnerProfile = { displayName: string; proficiencyLevel: string; voicePreference: VoicePreference; learningTimeZone: string; followDeviceTimeZone: boolean };
 const levels = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 
-export function ProfileDialog({ onProfileChange, mobile = false }: { onProfileChange: (profile: LearnerProfile) => void; mobile?: boolean }) {
+function safeAvatarUrl(value: unknown) {
+  if (typeof value !== 'string') return '';
+  if (value.startsWith('/')) return value;
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' && url.hostname.endsWith('.supabase.co') ? value : '';
+  } catch {
+    return '';
+  }
+}
+
+export function ProfileDialog({ onProfileChange, mobile = false, fallbackAvatarSrc }: { onProfileChange: (profile: LearnerProfile) => void; mobile?: boolean; fallbackAvatarSrc?: string }) {
   const [open, setOpen] = useState(false);
   const [displayName, setDisplayName] = useState('');
   const [proficiencyLevel, setProficiencyLevel] = useState('');
@@ -23,11 +35,13 @@ export function ProfileDialog({ onProfileChange, mobile = false }: { onProfileCh
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState('');
 
   useEffect(() => {
     const supabase = createClient();
     void supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) return;
+      setAvatarUrl(safeAvatarUrl(data.user.user_metadata?.avatar_url));
       const { data: profile, error } = await supabase.from('profiles').select('display_name, proficiency_level, voice_preference, learning_timezone, follow_device_timezone').eq('id', data.user.id).single();
       if (!error && profile) {
         const followsDevice = profile.follow_device_timezone === true;
@@ -42,7 +56,10 @@ export function ProfileDialog({ onProfileChange, mobile = false }: { onProfileCh
     });
   }, [onProfileChange]);
 
-  async function saveProfile(event: FormEvent<HTMLFormElement>) {
+  const profileAvatar = avatarUrl || fallbackAvatarSrc;
+  const initials = displayName.trim().slice(0, 2).toUpperCase() || 'ME';
+
+  async function saveProfile(event: { preventDefault(): void }) {
     event.preventDefault();
     setSaving(true);
     setMessage('');
@@ -69,7 +86,9 @@ export function ProfileDialog({ onProfileChange, mobile = false }: { onProfileCh
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<button className={mobile ? 'flex items-center gap-3 text-left' : 'icon-button'} aria-label="Edit learner profile" />}><Settings className={mobile ? 'size-6' : 'size-[18px]'} />{mobile && 'Profile'}</DialogTrigger>
+      <DialogTrigger render={<button className={mobile ? 'flex items-center gap-3 text-left' : 'profile-avatar-button'} aria-label="Open profile and settings" />}>
+        {mobile ? <><Settings className="size-6" />Profile</> : profileAvatar ? <img src={profileAvatar} alt="" className="profile-avatar-image" /> : <span className="text-xs font-bold">{initials}</span>}
+      </DialogTrigger>
       <DialogContent className="max-w-md gap-6 rounded-[24px] border border-white/80 p-6 shadow-[0_28px_90px_rgba(20,38,33,.22)] sm:p-7">
         <DialogHeader><DialogTitle className="text-2xl font-semibold tracking-[-.04em]">Profile</DialogTitle><DialogDescription className="text-base leading-relaxed">Choose a provisional level now. A placement check can refine it later.</DialogDescription></DialogHeader>
         <form onSubmit={saveProfile} className="space-y-5">

@@ -33,6 +33,8 @@ Lucide icons remain appropriate for functional controls such as navigation, play
 
 ## Personalization rules
 
+The authenticated account header is the canonical home for the personal avatar. It appears at the upper right, opens Profile and Settings, and replaces generic initials once an approved avatar exists. Do not place the learner avatar inside the upper-left KurtES wordmark. The account control reads the signed-in learner's avatar metadata so each account receives its own image from onboarding.
+
 The source photo determines the learner's visible identity. Do not copy Kurt's hair, glasses, facial structure, clothing, ethnicity, or gender presentation unless those traits are present in the learner's image or explicitly selected by the learner.
 
 Clothing should default to a simple, contemporary solid-color shirt or top. Cultural or regional clothing must be chosen by the learner; never infer it from appearance, name, language level, or location.

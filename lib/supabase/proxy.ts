@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 function addSecurityHeaders(response: NextResponse) {
   response.headers.set(
     'Content-Security-Policy',
-    "default-src 'self'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; object-src 'none'; img-src 'self' data: blob:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co; media-src 'self' blob:; upgrade-insecure-requests",
+    "default-src 'self'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; object-src 'none'; img-src 'self' data: blob: https://*.supabase.co; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co; media-src 'self' blob:; upgrade-insecure-requests",
   );
   response.headers.set('Permissions-Policy', 'camera=(), geolocation=(), microphone=()');
   response.headers.set('Cross-Origin-Opener-Policy', 'same-origin');
@@ -17,6 +17,8 @@ function addSecurityHeaders(response: NextResponse) {
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
+  // The title screen is public; learning routes still require authentication.
+  if (request.nextUrl.pathname === '/') return addSecurityHeaders(response);
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
@@ -35,18 +37,25 @@ export async function updateSession(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   const isAuthenticated = Boolean(data?.claims?.sub);
   const isSignIn = request.nextUrl.pathname === '/sign-in';
+  const isJoin = request.nextUrl.pathname === '/join';
   const isAuthCallback = request.nextUrl.pathname === '/auth/confirm';
 
-  if (!isAuthenticated && !isSignIn && !isAuthCallback) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/sign-in';
-    return addSecurityHeaders(NextResponse.redirect(url));
+  function redirectWithSession(url: URL) {
+    const redirect = NextResponse.redirect(url);
+    response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
+    return addSecurityHeaders(redirect);
   }
 
-  if (isAuthenticated && isSignIn) {
+  if (!isAuthenticated && !isSignIn && !isJoin && !isAuthCallback) {
     const url = request.nextUrl.clone();
-    url.pathname = '/';
-    return addSecurityHeaders(NextResponse.redirect(url));
+    url.pathname = '/sign-in';
+    return redirectWithSession(url);
+  }
+
+  if (isAuthenticated && (isSignIn || isJoin)) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/today';
+    return redirectWithSession(url);
   }
 
   return addSecurityHeaders(response);

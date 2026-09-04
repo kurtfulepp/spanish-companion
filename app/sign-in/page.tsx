@@ -1,7 +1,7 @@
+/* oxlint-disable next/no-img-element */
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { type SubmitEvent, useEffect, useState } from 'react';
 import { Brand } from '@/components/brand';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,6 @@ import { Label } from '@/components/ui/label';
 import { createClient } from '@/lib/supabase/client';
 
 export default function SignInPage() {
-  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
@@ -18,20 +17,24 @@ export default function SignInPage() {
   useEffect(() => {
     const supabase = createClient();
     void supabase.auth.getUser().then(({ data }) => {
-      if (data.user) router.replace('/');
-    });
-  }, [router]);
+      if (data.user) window.location.replace('/today');
+    }).catch(() => setMessage('Could not check your session. Sign in to try again.'));
+  }, []);
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
+  async function submit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (loading) return;
     setLoading(true);
     setMessage('');
-    const supabase = createClient();
-
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) setMessage('Email or password was not recognized.');
-    else window.location.replace('/');
-    setLoading(false);
+    try {
+      const { error } = await createClient().auth.signInWithPassword({ email, password });
+      if (error) setMessage('Email or password was not recognized.');
+      else window.location.replace('/today');
+    } catch {
+      setMessage('Could not connect. Check your connection and try again.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -46,7 +49,7 @@ export default function SignInPage() {
         <form onSubmit={submit} className="mt-7 space-y-5">
           <div className="space-y-2"><Label htmlFor="email">Email</Label><Input id="email" name="email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} required className="h-12 rounded-[14px] bg-[#f7f7f8] px-4" /></div>
           <div className="space-y-2"><Label htmlFor="password">Password</Label><Input id="password" name="password" type="password" autoComplete="current-password" minLength={6} value={password} onChange={(event) => setPassword(event.target.value)} required className="h-12 rounded-[14px] bg-[#f7f7f8] px-4" /></div>
-          {message && <p role="status" className="rounded-xl bg-[#fff4dc] px-4 py-3 text-sm leading-relaxed text-[#77551a]">{message}</p>}
+          {message && <output className="block rounded-xl bg-[#fff4dc] px-4 py-3 text-sm leading-relaxed text-[#77551a]">{message}</output>}
           <Button type="submit" disabled={loading} className="h-12 w-full rounded-full text-base font-bold">{loading ? 'Please wait…' : 'Sign in'}</Button>
         </form></div>
       </section>

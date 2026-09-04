@@ -4,9 +4,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ArrowRight, BookOpen, Check, Sparkles } from 'lucide-react';
 import { VocabularyHeader } from '@/components/vocabulary-header';
-import type { LearnerProfile } from '@/components/profile-dialog';
 import { createClient } from '@/lib/supabase/client';
-import { DEFAULT_LEARNING_TIME_ZONE } from '@/lib/progress';
 import { KURTES_ILLUSTRATIONS } from '@/lib/illustrations';
 
 type Theme = { id: string; title: string; description: string };
@@ -20,14 +18,11 @@ const futureThemes = [
   { title: 'Feelings & Relationships', description: 'Nuance, support, boundaries, and connection.', image: KURTES_ILLUSTRATIONS.feelingsRelationships.src, tone: 'bg-[#fbecef]' },
 ];
 
-const emptyProfile: LearnerProfile = { displayName: '', proficiencyLevel: '', voicePreference: 'male', learningTimeZone: DEFAULT_LEARNING_TIME_ZONE, followDeviceTimeZone: false };
-
 export default function VocabularyPage() {
-  const [profile, setProfile] = useState<LearnerProfile>(emptyProfile);
   const [theme, setTheme] = useState<Theme | null>(null);
   const [startedCount, setStartedCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const updateProfile = useCallback((next: LearnerProfile) => setProfile(next), []);
+  const updateProfile = useCallback(() => undefined, []);
 
   useEffect(() => {
     const supabase = createClient();
@@ -44,7 +39,7 @@ export default function VocabularyPage() {
     })();
   }, []);
 
-  return <main className="min-h-screen bg-background px-3 pb-12 pt-3 text-foreground sm:px-5"><VocabularyHeader profile={profile} onProfileChange={updateProfile} /><section className="relative mx-auto mt-5 max-w-[1360px] overflow-hidden rounded-[24px] bg-[linear-gradient(115deg,#e9513d_0%,#ef6a43_48%,#f4a43b_100%)] text-white shadow-[0_14px_38px_rgba(199,69,43,.2)]"><span className="absolute -right-8 -top-16 size-40 rounded-full bg-[#38b9b0]/45" aria-hidden="true" /><span className="absolute -bottom-20 right-24 size-40 rounded-full bg-[#ffd45b]/55" aria-hidden="true" /><div className="relative flex min-h-[158px] flex-col justify-between gap-6 px-6 py-6 sm:flex-row sm:items-center sm:px-8 lg:px-10"><div className="max-w-4xl"><span className="inline-flex items-center gap-2 rounded-full bg-[#8e2f32]/28 px-3 py-1 text-xs font-bold uppercase tracking-[.08em] text-white"><Sparkles className="size-3.5" />Vocabulary worlds</span><h1 className="mt-3 font-heading text-[clamp(2rem,4vw,3.35rem)] font-semibold leading-[.95] tracking-[-.055em]">Choose a world. Find your gaps.</h1><p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-white/88">Build the phrases you can actually use, one real situation at a time.</p></div><div className="flex shrink-0 items-center gap-3 sm:flex-col"><span className="grid size-20 place-items-center rounded-[22px] bg-[#ffd45b] shadow-[0_10px_24px_rgba(121,46,31,.22)] sm:size-24"><img src={KURTES_ILLUSTRATIONS.topicCompass.src} alt="" className="size-[88%] object-contain" /></span><span className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-[#933b31] shadow-sm">{startedCount ? `${startedCount} expressions started` : 'Your topic map'}</span></div></div></section>
+  return <main className="min-h-screen bg-background px-3 pb-12 pt-3 text-foreground sm:px-5"><VocabularyHeader onProfileChange={updateProfile} /><section className="brand-hero mx-auto mt-5 max-w-[1360px]"><span className="brand-orbit brand-orbit-turquoise" aria-hidden="true" /><span className="brand-orbit brand-orbit-yellow" aria-hidden="true" /><div className="relative flex min-h-[158px] flex-col justify-between gap-6 px-6 py-6 sm:flex-row sm:items-center sm:px-8 lg:px-10"><div className="max-w-4xl"><span className="inline-flex items-center gap-2 rounded-full bg-[#8e2f32]/28 px-3 py-1 text-xs font-bold uppercase tracking-[.08em] text-white"><Sparkles className="size-3.5" />Vocabulary worlds</span><h1 className="mt-3 font-heading text-[clamp(2rem,4vw,3.35rem)] font-semibold leading-[.95] tracking-[-.055em]">Choose a world. Find your gaps.</h1><p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-white/88">Build the phrases you can actually use, one real situation at a time.</p></div><div className="flex shrink-0 items-center gap-3 sm:flex-col"><span className="grid size-20 place-items-center rounded-[22px] bg-[#ffd45b] shadow-[0_10px_24px_rgba(121,46,31,.22)] sm:size-24"><img src={KURTES_ILLUSTRATIONS.topicCompass.src} alt="" className="size-[88%] object-contain" /></span><span className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-[#933b31] shadow-sm">{startedCount ? `${startedCount} expressions started` : 'Your topic map'}</span></div></div></section>
 
   <section className="mx-auto mt-8 max-w-[1360px]"><div className="flex items-end justify-between gap-5"><div><p className="eyebrow">Vocabulary themes</p><h2 className="mt-2 text-3xl font-semibold tracking-[-.045em]">Where do you want to feel fluent?</h2></div><span className="hidden text-sm text-muted-foreground sm:block">More worlds will open as we build them.</span></div>
   <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">{loading ? Array.from({ length: 6 }).map((_, index) => <div key={index} className="h-64 animate-pulse rounded-[26px] bg-secondary" />) : <>

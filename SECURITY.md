@@ -7,7 +7,8 @@ variables, and Row Level Security limits learner records to their owner.
 ## Controls in place
 
 - Authentication is required for the main application and speech API.
-- New account creation is not exposed in the product UI.
+- The Join form uses Supabase signup and respects its server-side account-creation controls.
+  Disabled signup is shown as unavailable; the UI does not enable it.
 - Learning scores are calculated by trusted database functions rather than
   accepted directly from the browser.
 - Speech generation is limited per authenticated user to reduce accidental or
