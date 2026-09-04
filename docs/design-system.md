@@ -61,6 +61,8 @@ The user's explicit choice is **direct and understated**. Describe what the lear
 
 No motivational filler, sentimental promises, or decorative taglines in navigation, footers, or below actions. Do not replace a removed slogan with another. Specifically rejected: “A little Spanish, every day”, “Small steps. Real confidence”, “Vamos, a tu ritmo”, and the courage / new-world-of-conversation copy. Empty space is intentional.
 
+Keep the Vocabulary overview similarly concise: omit the “More worlds…” tagline, the redundant “Vocabulary themes” eyebrow, and the “Your topic map” caption beneath the compass artwork.
+
 Keep explanations and errors useful. Preserve Spanish in lesson content and examples; the explicitly requested “¡Hola!” speech bubble beside the welcome coach is retained. Do not generalize this into decorative Spanish taglines elsewhere. A colorful visual system does not require a promotional voice.
 
 ## Extending the system
