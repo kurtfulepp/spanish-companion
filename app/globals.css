@@ -41,7 +41,7 @@
   .auth-shell { background:radial-gradient(circle at 20% 10%,rgba(244,189,78,.18),transparent 32%),radial-gradient(circle at 85% 90%,rgba(64,137,119,.16),transparent 34%),#f6f1e8; }
   .auth-card { @apply border border-white/75 bg-[#fffdfa]/92 shadow-[0_24px_80px_rgba(49,40,27,.14)] backdrop-blur-xl; }
   .embroidery-rule { background:linear-gradient(90deg,#d84c3f 0 18%,#f4bd4e 18% 37%,#2f806b 37% 58%,#4b8fc5 58% 78%,#d84c3f 78% 100%); }
-  .brand-es { @apply ml-[.12em] inline-grid min-w-[1.9em] place-items-center rounded-[.45em] px-[.32em] pb-[.1em] pt-[.12em] align-[.12em] text-[.72em] font-extrabold tracking-[.02em]; color:var(--brand-ink-strong); background:var(--brand-logo-fill); box-shadow:inset 0 -2px 0 #c74b3d,0 2px 8px rgba(199,75,61,.12); }
+  .brand-es { @apply ml-[.08em] inline-block align-baseline text-[.88em] font-extrabold tracking-[-.045em]; line-height:.92; color:var(--brand-flag-red); background:linear-gradient(180deg,var(--brand-flag-red) 0 24%,var(--brand-flag-gold) 24% 76%,var(--brand-flag-red) 76% 100%); background-clip:text; -webkit-background-clip:text; -webkit-text-fill-color:transparent; filter:drop-shadow(0 .025em 0 rgba(95,31,27,.24)); }
   .eyebrow { @apply text-xs font-semibold uppercase tracking-[.12em] text-muted-foreground; }
   .word-dot { @apply size-2.5 shrink-0 rounded-full; }
   .word-dot.gold { @apply bg-[#f4bd4e]; } .word-dot.blue { @apply bg-[#71a9d6]; } .word-dot.coral { @apply bg-[#ed816c]; }
@@ -49,6 +49,8 @@
   .practice-icon { @apply grid size-11 shrink-0 place-items-center rounded-2xl; }
   .practice-icon.coral { @apply bg-[#ffe5df] text-[#c85843]; } .practice-icon.blue { @apply bg-[#e2eff8] text-[#3976a7]; } .practice-icon.gold { @apply bg-[#fff1d2] text-[#c37a1d]; }
 }
+
+@media (forced-colors:active) { .brand-es { color:CanvasText; background:none; -webkit-text-fill-color:currentColor; filter:none; } }
 
 @media (prefers-reduced-motion:no-preference) { .practice-card { animation:appear .4s cubic-bezier(.22,1,.36,1) both; } @keyframes appear { from { opacity:0; transform:translateY(8px); } } }
 

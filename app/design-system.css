@@ -8,6 +8,8 @@
   --brand-marigold: #f4a43b;
   --brand-gold: #f4bd4e;
   --brand-gold-light: #ffd76a;
+  --brand-flag-red: #aa151b;
+  --brand-flag-gold: #f1bf00;
   --brand-yellow: #ffd45b;
   --brand-turquoise: #38b9b0;
   --brand-ink: #7f302b;
@@ -18,7 +20,6 @@
   --brand-border: #e1d9cc;
   --brand-avatar-border: var(--brand-gold);
   --brand-hero-fill: linear-gradient(115deg, var(--brand-coral) 0%, var(--brand-orange) 48%, var(--brand-marigold) 100%);
-  --brand-logo-fill: linear-gradient(180deg, var(--brand-gold-light) 0%, var(--brand-gold) 100%);
   --brand-hero-shadow: 0 14px 38px rgba(199,69,43,.2);
   --brand-art-shadow: 0 18px 20px rgba(118,85,20,.14);
   --brand-radius-hero: 24px;
