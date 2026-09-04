@@ -1,13 +1,14 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { ArrowRight, BookOpen, Check, Flame, Headphones, Menu, Mic, MoreHorizontal, Play, Search, Sparkles, Target, Volume2, X } from 'lucide-react';
+import { ArrowRight, BookOpen, CalendarDays, Check, Flame, Headphones, Menu, Mic, MoreHorizontal, Play, Search, Sparkles, Target, Trophy, Volume2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Brand } from '@/components/brand';
 import { ProfileDialog, type LearnerProfile } from '@/components/profile-dialog';
 import { LevelAssessmentDialog } from '@/components/level-assessment-dialog';
 import { DailyLessonDialog } from '@/components/daily-lesson-dialog';
 import { createClient } from '@/lib/supabase/client';
+import { calculateStreak, currentWeek, dateKey, DEFAULT_LEARNING_TIME_ZONE, deviceTimeZone, formatCompletionDate, timeZoneLabel } from '@/lib/progress';
 import { playSpanishSpeech } from '@/lib/speech';
 
 const recentWords = [
@@ -22,53 +23,38 @@ const practiceModes = [
   { icon: Target, title: 'Review', copy: 'Revisit tricky words', color: 'gold' },
 ];
 
-const weekdayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-
-function dateKey(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-function currentWeek() {
-  const today = new Date();
-  const monday = new Date(today);
-  const dayFromMonday = (today.getDay() + 6) % 7;
-  monday.setDate(today.getDate() - dayFromMonday);
-  return weekdayLabels.map((label, index) => {
-    const date = new Date(monday);
-    date.setDate(monday.getDate() + index);
-    return { label, key: dateKey(date), isToday: dateKey(date) === dateKey(today) };
-  });
-}
-
-function calculateStreak(completionDates: string[]) {
-  const completed = new Set(completionDates);
-  const cursor = new Date();
-  if (!completed.has(dateKey(cursor))) cursor.setDate(cursor.getDate() - 1);
-  let streak = 0;
-  while (completed.has(dateKey(cursor))) {
-    streak += 1;
-    cursor.setDate(cursor.getDate() - 1);
-  }
-  return streak;
-}
+type LessonAttempt = {
+  id: string;
+  score: number;
+  total_activities: number;
+  completed_at: string;
+  lessons: { title: string } | { title: string }[] | null;
+};
 
 export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [lessonOpen, setLessonOpen] = useState(false);
   const [activeEmail, setActiveEmail] = useState<string | null>(null);
-  const [completionDates, setCompletionDates] = useState<string[]>([]);
-  const [profile, setProfile] = useState<LearnerProfile>({ displayName: '', proficiencyLevel: '', voicePreference: 'male' });
+  const [attempts, setAttempts] = useState<LessonAttempt[]>([]);
+  const [completedLessonCount, setCompletedLessonCount] = useState(0);
+  const [progressLoading, setProgressLoading] = useState(true);
+  const [progressMessage, setProgressMessage] = useState('');
+  const [profile, setProfile] = useState<LearnerProfile>({ displayName: '', proficiencyLevel: '', voicePreference: 'male', learningTimeZone: DEFAULT_LEARNING_TIME_ZONE, followDeviceTimeZone: false });
   const updateProfile = useCallback((nextProfile: LearnerProfile) => setProfile(nextProfile), []);
 
   const refreshProgress = useCallback(async () => {
     const supabase = createClient();
     const { data: auth } = await supabase.auth.getUser();
     if (!auth.user) return;
-    const { data } = await supabase.from('lesson_attempts').select('completed_at').eq('user_id', auth.user.id).eq('status', 'completed').not('completed_at', 'is', null).order('completed_at', { ascending: false }).limit(90);
-    setCompletionDates(Array.from(new Set((data ?? []).map((attempt) => dateKey(new Date(attempt.completed_at))))));
+    setProgressLoading(true);
+    setProgressMessage('');
+    const { data, error, count } = await supabase.from('lesson_attempts').select('id, score, total_activities, completed_at, lessons(title)', { count: 'exact' }).eq('user_id', auth.user.id).eq('status', 'completed').not('completed_at', 'is', null).order('completed_at', { ascending: false }).limit(90);
+    if (error) setProgressMessage('Your progress could not be loaded right now.');
+    else {
+      setAttempts((data ?? []) as LessonAttempt[]);
+      setCompletedLessonCount(count ?? 0);
+    }
+    setProgressLoading(false);
   }, []);
 
   useEffect(() => {
@@ -100,8 +86,13 @@ export default function Home() {
     return () => lifecycle.abort();
   }, []);
 
-  const streak = calculateStreak(completionDates);
-  const week = currentWeek();
+  const learningTimeZone = profile.followDeviceTimeZone ? deviceTimeZone() : profile.learningTimeZone || DEFAULT_LEARNING_TIME_ZONE;
+  const completionDates = Array.from(new Set(attempts.map((attempt) => dateKey(new Date(attempt.completed_at), learningTimeZone))));
+  const streak = calculateStreak(completionDates, learningTimeZone);
+  const week = currentWeek(learningTimeZone);
+  const totalAnswered = attempts.reduce((total, attempt) => total + attempt.total_activities, 0);
+  const totalCorrect = attempts.reduce((total, attempt) => total + attempt.score, 0);
+  const averageScore = totalAnswered ? Math.round(totalCorrect / totalAnswered * 100) : 0;
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-background px-3 pb-5 pt-3 text-foreground sm:px-5">
@@ -124,7 +115,7 @@ export default function Home() {
           <div className="mt-6 grid grid-cols-7 gap-1.5" aria-label="Weekly activity">{week.map((day) => { const complete = completionDates.includes(day.key); return <div key={day.key} className="text-center"><span className={`mx-auto grid size-7 place-items-center rounded-full text-[11px] font-semibold ${complete ? 'bg-primary text-white' : day.isToday ? 'ring-1 ring-inset ring-primary text-primary' : 'bg-secondary text-muted-foreground'}`}>{complete ? <Check className="size-3.5" /> : day.label}</span><span className="mt-1.5 block text-[10px] font-medium text-muted-foreground">{day.label}</span></div>; })}</div>
           <div className="my-6 h-px bg-border/70" />
           <p className="eyebrow">Quick practice</p>
-          <div id="progress" className="mt-3 space-y-1">{practiceModes.map(({icon:Icon,title,copy,color}) => <button key={title} className="group flex w-full items-center gap-3 rounded-[16px] p-2.5 text-left transition hover:bg-[#f4f5f6]"><span className={`practice-icon ${color} size-9 rounded-xl`}><Icon className="size-[17px]" /></span><span className="min-w-0"><strong className="block text-sm font-semibold">{title}</strong><span className="block truncate text-xs text-muted-foreground">{copy}</span></span><ArrowRight className="ml-auto size-3.5 text-muted-foreground opacity-0 transition group-hover:translate-x-0.5 group-hover:opacity-100" /></button>)}</div>
+          <div className="mt-3 space-y-1">{practiceModes.map(({icon:Icon,title,copy,color}) => <button key={title} className="group flex w-full items-center gap-3 rounded-[16px] p-2.5 text-left transition hover:bg-[#f4f5f6]"><span className={`practice-icon ${color} size-9 rounded-xl`}><Icon className="size-[17px]" /></span><span className="min-w-0"><strong className="block text-sm font-semibold">{title}</strong><span className="block truncate text-xs text-muted-foreground">{copy}</span></span><ArrowRight className="ml-auto size-3.5 text-muted-foreground opacity-0 transition group-hover:translate-x-0.5 group-hover:opacity-100" /></button>)}</div>
         </aside>
 
         <article className="surface order-1 flex min-h-[620px] flex-col overflow-hidden rounded-[32px] bg-[#fffaf0] lg:order-2">
@@ -140,6 +131,14 @@ export default function Home() {
       <section id="vocabulary" className="surface mx-auto mt-5 max-w-[1360px] overflow-hidden rounded-[28px]">
         <div className="flex items-center justify-between border-b border-border/70 px-6 py-5 sm:px-7"><div><p className="eyebrow">Recently saved</p><h2 className="mt-1 text-xl font-semibold tracking-[-.03em]">Words to revisit</h2></div><span className="grid size-10 place-items-center rounded-full bg-accent"><BookOpen className="size-[18px] text-[#52776d]" /></span></div>
         <div className="grid divide-y divide-border/70 md:grid-cols-3 md:divide-x md:divide-y-0">{recentWords.map((word) => <button key={word.spanish} className="group flex items-center gap-3 px-6 py-5 text-left transition hover:bg-[#fafafa]"><span className={`word-dot ${word.tone}`} /><span className="min-w-0 flex-1"><strong className="block text-[15px] font-semibold">{word.spanish}</strong><span className="block truncate text-sm text-muted-foreground">{word.english}</span></span><ArrowRight className="size-4 text-[#75948b] transition group-hover:translate-x-1" /></button>)}</div>
+      </section>
+
+      <section id="progress" className="surface mx-auto mt-5 max-w-[1360px] overflow-hidden rounded-[28px]">
+        <div className="flex flex-col gap-2 border-b border-border/70 px-6 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7"><div><p className="eyebrow">Learning history</p><h2 className="mt-1 text-xl font-semibold tracking-[-.03em]">Your progress</h2></div><span className="inline-flex w-fit items-center gap-2 rounded-full bg-secondary px-3 py-1.5 text-sm font-medium text-muted-foreground"><CalendarDays className="size-4" />{timeZoneLabel(learningTimeZone)}</span></div>
+        {progressLoading ? <div className="grid min-h-56 place-items-center p-8"><div className="text-center"><span className="mx-auto block size-7 animate-spin rounded-full border-2 border-primary/20 border-t-primary" /><p className="mt-3 text-sm text-muted-foreground">Loading your progress…</p></div></div> : progressMessage ? <p role="alert" className="m-6 rounded-[16px] bg-[#fff1ed] px-4 py-3 text-sm text-[#8b4337]">{progressMessage}</p> : <div className="grid lg:grid-cols-[.9fr_1.1fr]">
+          <div className="grid grid-cols-3 gap-px bg-border/70 lg:grid-cols-1"><div className="bg-white p-5 sm:p-6"><span className="text-sm text-muted-foreground">Current streak</span><strong className="mt-2 block text-3xl tracking-[-.05em] text-[#173c34]">{streak} <small className="text-sm font-medium text-muted-foreground">{streak === 1 ? 'day' : 'days'}</small></strong></div><div className="bg-white p-5 sm:p-6"><span className="text-sm text-muted-foreground">Lessons completed</span><strong className="mt-2 block text-3xl tracking-[-.05em] text-[#173c34]">{completedLessonCount}</strong></div><div className="bg-white p-5 sm:p-6"><span className="text-sm text-muted-foreground">Recent average</span><strong className="mt-2 block text-3xl tracking-[-.05em] text-[#173c34]">{averageScore}%</strong></div></div>
+          <div className="border-t border-border/70 p-6 lg:border-l lg:border-t-0 lg:p-7"><div className="flex items-center justify-between"><div><p className="eyebrow">Most recent</p><h3 className="mt-1 text-lg font-semibold">Lesson activity</h3></div><span className="grid size-10 place-items-center rounded-full bg-[#fff1d2] text-[#d78224]"><Trophy className="size-[18px]" /></span></div>{attempts.length ? <div className="mt-5 divide-y divide-border/70">{attempts.slice(0, 5).map((attempt) => { const lesson = Array.isArray(attempt.lessons) ? attempt.lessons[0] : attempt.lessons; return <div key={attempt.id} className="flex items-center justify-between gap-4 py-3.5 first:pt-0"><div className="min-w-0"><strong className="block truncate text-[15px] font-semibold">{lesson?.title || 'Spanish practice'}</strong><span className="mt-0.5 block text-sm text-muted-foreground">{formatCompletionDate(attempt.completed_at, learningTimeZone)}</span></div><span className="shrink-0 rounded-full bg-[#eef6f2] px-3 py-1.5 text-sm font-semibold text-primary">{attempt.score}/{attempt.total_activities}</span></div>})}</div> : <div className="mt-6 rounded-[20px] bg-[#f7f9f8] p-6 text-center"><p className="font-semibold text-[#173c34]">Your first result will appear here.</p><p className="mt-1 text-sm leading-relaxed text-muted-foreground">Complete today’s lesson to begin your learning history.</p></div>}</div>
+        </div>}
       </section>
     </main>
   );
