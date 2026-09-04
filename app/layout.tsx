@@ -16,6 +16,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: 'KurtES — Your Spanish companion',
   description: 'Build everyday Spanish confidence with short, focused practice.',
+  icons: {
+    icon: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({
