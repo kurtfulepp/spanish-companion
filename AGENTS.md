@@ -7,3 +7,5 @@ The brand voice is direct and understated. Do not add motivational taglines. Do 
 For artwork, also read `docs/illustration-library.md`; for personal avatars, read `docs/learner-avatar-reference.md`. Extend the existing libraries instead of replacing them.
 
 When the user changes a standard, update the design-system document and shared implementation together. Preserve unrelated in-progress work.
+
+Before publishing this project, remind the user to upgrade Supabase to Pro or above and set Authentication → Sessions → Time-box user sessions to 168 hours (seven days). Verify the setting before considering this reminder complete. Keep the access-token expiry at 3600 seconds; it is not the session timeout. This reminder does not authorize purchasing an upgrade.

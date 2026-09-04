@@ -36,6 +36,9 @@ before the app holds data that cannot be recreated.
 
 ## Before public access
 
+- Upgrade Supabase to Pro or above and set Authentication → Sessions → Time-box
+  user sessions to 168 hours (seven days). Verify the saved setting before publishing;
+  retain the 3600-second access-token expiry.
 - Add CAPTCHA to sign-up and sign-in.
 - Enable email confirmation and verify production redirect URLs.
 - Review rate limits against real usage and add centralized/edge limiting if the
