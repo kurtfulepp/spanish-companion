@@ -101,7 +101,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-background px-3 pb-5 pt-3 text-foreground sm:px-5">
-      <DailyLessonDialog open={lessonOpen} onOpenChange={setLessonOpen} level={profile.proficiencyLevel || 'B2'} voice={profile.voicePreference} onComplete={refreshProgress} />
+      {lessonOpen && <DailyLessonDialog open onOpenChange={setLessonOpen} level={profile.proficiencyLevel || 'B2'} voice={profile.voicePreference} onComplete={refreshProgress} />}
       <header className="app-header">
         <a href="/today" aria-label="KurtES home"><Brand compact /></a>
         <nav className="hidden items-center gap-1 sm:flex" aria-label="Main navigation"><a className="nav-link nav-link-active" href="#practice">Today</a><a className="nav-link" href="/vocabulary">Vocabulary</a><a className="nav-link" href="#progress">Practice</a></nav>

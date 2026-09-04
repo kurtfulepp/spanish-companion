@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
+import { getSupabaseConfig } from '@/lib/supabase/config';
 import './globals.css';
 
 const geistSans = Geist({
@@ -22,8 +23,14 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const supabase = getSupabaseConfig();
+
   return (
-    <html lang="en">
+    <html
+      lang="en"
+      data-supabase-url={supabase.url || undefined}
+      data-supabase-publishable-key={supabase.publishableKey || undefined}
+    >
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

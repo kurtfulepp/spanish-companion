@@ -1,3 +1,4 @@
+/* oxlint-disable next/no-img-element -- the cropped brand sprite needs native image sizing */
 export function Brand({ compact = false }: { compact?: boolean }) {
   return (
     <span className="flex items-center gap-3">

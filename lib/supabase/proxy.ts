@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { requireSupabaseConfig } from '@/lib/supabase/config';
 
 function addSecurityHeaders(response: NextResponse) {
   response.headers.set(
@@ -19,9 +20,10 @@ export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
   // The title screen is public; learning routes still require authentication.
   if (request.nextUrl.pathname === '/') return addSecurityHeaders(response);
+  const { url, publishableKey } = requireSupabaseConfig();
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    url,
+    publishableKey,
     {
       cookies: {
         getAll: () => request.cookies.getAll(),

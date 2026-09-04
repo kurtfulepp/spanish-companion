@@ -40,7 +40,7 @@ export function DailyLessonDialog({ open, onOpenChange, level, voice, onComplete
   const [checked, setChecked] = useState(false);
   const [score, setScore] = useState(0);
   const [attemptId, setAttemptId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [audioState, setAudioState] = useState<AudioState>('idle');
@@ -48,17 +48,6 @@ export function DailyLessonDialog({ open, onOpenChange, level, voice, onComplete
 
   useEffect(() => {
     if (!open) return;
-    setView('intro');
-    setActivityIndex(0);
-    setSelected('');
-    setChecked(false);
-    setScore(0);
-    setAttemptId(null);
-    setMessage('');
-    setAudioState('idle');
-    audioRequestInProgress.current = false;
-    setLoading(true);
-
     const supabase = createClient();
     void (async () => {
       let { data: lessonData, error: lessonError } = await supabase.from('lessons').select('id, title, description, level, estimated_minutes').eq('is_published', true).eq('level', level || 'B2').order('published_at', { ascending: false }).limit(1).maybeSingle();
