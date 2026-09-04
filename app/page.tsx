@@ -11,12 +11,6 @@ import { createClient } from '@/lib/supabase/client';
 import { calculateStreak, currentWeek, dateKey, DEFAULT_LEARNING_TIME_ZONE, deviceTimeZone, formatCompletionDate, timeZoneLabel } from '@/lib/progress';
 import { playSpanishSpeech } from '@/lib/speech';
 
-const recentWords = [
-  { spanish: 'aprovechar', english: 'to make the most of', tone: 'gold' },
-  { spanish: 'la sobremesa', english: 'time spent chatting after a meal', tone: 'blue' },
-  { spanish: 'dar una vuelta', english: 'to take a walk / look around', tone: 'coral' },
-];
-
 const practiceModes = [
   { icon: Mic, title: 'Speak', copy: 'Build confidence out loud', color: 'coral' },
   { icon: Headphones, title: 'Listen', copy: 'Train your ear', color: 'blue' },
@@ -31,6 +25,8 @@ type LessonAttempt = {
   lessons: { title: string } | { title: string }[] | null;
 };
 
+type ReviewWord = { id: string; spanish: string; english: string; tone: string };
+
 export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [lessonOpen, setLessonOpen] = useState(false);
@@ -39,6 +35,7 @@ export default function Home() {
   const [completedLessonCount, setCompletedLessonCount] = useState(0);
   const [progressLoading, setProgressLoading] = useState(true);
   const [progressMessage, setProgressMessage] = useState('');
+  const [reviewWords, setReviewWords] = useState<ReviewWord[]>([]);
   const [profile, setProfile] = useState<LearnerProfile>({ displayName: '', proficiencyLevel: '', voicePreference: 'male', learningTimeZone: DEFAULT_LEARNING_TIME_ZONE, followDeviceTimeZone: false });
   const updateProfile = useCallback((nextProfile: LearnerProfile) => setProfile(nextProfile), []);
 
@@ -48,12 +45,20 @@ export default function Home() {
     if (!auth.user) return;
     setProgressLoading(true);
     setProgressMessage('');
-    const { data, error, count } = await supabase.from('lesson_attempts').select('id, score, total_activities, completed_at, lessons(title)', { count: 'exact' }).eq('user_id', auth.user.id).eq('status', 'completed').not('completed_at', 'is', null).order('completed_at', { ascending: false }).limit(90);
+    const [{ data, error, count }, { data: vocabularyData }] = await Promise.all([
+      supabase.from('lesson_attempts').select('id, score, total_activities, completed_at, lessons(title)', { count: 'exact' }).eq('user_id', auth.user.id).eq('status', 'completed').not('completed_at', 'is', null).order('completed_at', { ascending: false }).limit(90),
+      supabase.from('user_vocabulary_progress').select('item_id, next_review_at, vocabulary_items(spanish, english)').in('status', ['new', 'learning']).order('next_review_at', { ascending: true }).limit(3),
+    ]);
     if (error) setProgressMessage('Your progress could not be loaded right now.');
     else {
       setAttempts((data ?? []) as LessonAttempt[]);
       setCompletedLessonCount(count ?? 0);
     }
+    const tones = ['gold', 'blue', 'coral'];
+    setReviewWords((vocabularyData ?? []).flatMap((entry, index) => {
+      const item = Array.isArray(entry.vocabulary_items) ? entry.vocabulary_items[0] : entry.vocabulary_items;
+      return item ? [{ id: entry.item_id, spanish: item.spanish, english: item.english, tone: tones[index % tones.length] }] : [];
+    }));
     setProgressLoading(false);
   }, []);
 
@@ -99,12 +104,12 @@ export default function Home() {
       <DailyLessonDialog open={lessonOpen} onOpenChange={setLessonOpen} level={profile.proficiencyLevel || 'B2'} voice={profile.voicePreference} onComplete={refreshProgress} />
       <header className="app-header">
         <a href="#" aria-label="KurtES home"><Brand /></a>
-        <nav className="hidden items-center gap-1 md:flex" aria-label="Main navigation"><a className="nav-link nav-link-active" href="#practice">Today</a><a className="nav-link" href="#vocabulary">Vocabulary</a><a className="nav-link" href="#progress">Practice</a></nav>
+        <nav className="hidden items-center gap-1 md:flex" aria-label="Main navigation"><a className="nav-link nav-link-active" href="#practice">Today</a><a className="nav-link" href="/vocabulary">Vocabulary</a><a className="nav-link" href="#progress">Practice</a></nav>
         <div className="hidden items-center gap-2 sm:flex"><button className="icon-button" aria-label="Search"><Search className="size-[17px]" /></button><ProfileDialog onProfileChange={updateProfile} />{process.env.NODE_ENV === 'development' && activeEmail && <span className="max-w-44 truncate rounded-full bg-accent px-3 py-1.5 text-xs font-medium text-[#315d52]" title="Development: active Supabase user">{activeEmail}</span>}<button onClick={signOut} className="rounded-full px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-secondary hover:text-foreground">Sign out</button><span className="grid size-9 place-items-center rounded-full bg-[#f2b544] text-xs font-bold text-[#263b35] shadow-sm">{(profile.displayName || activeEmail)?.slice(0, 2).toUpperCase() ?? 'KC'}</span></div>
         <button className="icon-button sm:hidden" aria-label="Open menu" onClick={() => setMenuOpen(true)}><Menu className="size-5" /></button>
       </header>
 
-      {menuOpen && <div className="fixed inset-0 z-50 bg-[#173c34] p-6 text-white sm:hidden"><div className="flex items-center justify-between"><Brand compact /><button onClick={() => setMenuOpen(false)} aria-label="Close menu"><X /></button></div><nav className="mt-16 grid gap-6 text-3xl font-semibold"><a href="#practice">Today</a><a href="#vocabulary">Vocabulary</a><a href="#progress">Practice</a><ProfileDialog onProfileChange={updateProfile} mobile /><button onClick={signOut} className="text-left text-[#f4bd4e]">Sign out</button></nav>{process.env.NODE_ENV === 'development' && activeEmail && <p className="absolute bottom-7 left-6 right-6 truncate text-sm text-white/60">Active user: {activeEmail}</p>}</div>}
+      {menuOpen && <div className="fixed inset-0 z-50 bg-[#173c34] p-6 text-white sm:hidden"><div className="flex items-center justify-between"><Brand compact /><button onClick={() => setMenuOpen(false)} aria-label="Close menu"><X /></button></div><nav className="mt-16 grid gap-6 text-3xl font-semibold"><a href="#practice">Today</a><a href="/vocabulary">Vocabulary</a><a href="#progress">Practice</a><ProfileDialog onProfileChange={updateProfile} mobile /><button onClick={signOut} className="text-left text-[#f4bd4e]">Sign out</button></nav>{process.env.NODE_ENV === 'development' && activeEmail && <p className="absolute bottom-7 left-6 right-6 truncate text-sm text-white/60">Active user: {activeEmail}</p>}</div>}
 
       <section id="practice" className="mx-auto mt-5 grid max-w-[1360px] gap-5 lg:grid-cols-[260px_minmax(0,1fr)]">
         <aside className="surface order-2 rounded-[28px] p-5 lg:order-1 lg:p-6">
@@ -129,8 +134,8 @@ export default function Home() {
       </section>
 
       <section id="vocabulary" className="surface mx-auto mt-5 max-w-[1360px] overflow-hidden rounded-[28px]">
-        <div className="flex items-center justify-between border-b border-border/70 px-6 py-5 sm:px-7"><div><p className="eyebrow">Recently saved</p><h2 className="mt-1 text-xl font-semibold tracking-[-.03em]">Words to revisit</h2></div><span className="grid size-10 place-items-center rounded-full bg-accent"><BookOpen className="size-[18px] text-[#52776d]" /></span></div>
-        <div className="grid divide-y divide-border/70 md:grid-cols-3 md:divide-x md:divide-y-0">{recentWords.map((word) => <button key={word.spanish} className="group flex items-center gap-3 px-6 py-5 text-left transition hover:bg-[#fafafa]"><span className={`word-dot ${word.tone}`} /><span className="min-w-0 flex-1"><strong className="block text-[15px] font-semibold">{word.spanish}</strong><span className="block truncate text-sm text-muted-foreground">{word.english}</span></span><ArrowRight className="size-4 text-[#75948b] transition group-hover:translate-x-1" /></button>)}</div>
+        <div className="flex items-center justify-between border-b border-border/70 px-6 py-5 sm:px-7"><div><p className="eyebrow">Recently saved</p><h2 className="mt-1 text-xl font-semibold tracking-[-.03em]">Words to revisit</h2></div><a href="/vocabulary" className="inline-flex items-center gap-2 rounded-full bg-accent px-3 py-2 text-sm font-semibold text-[#52776d] transition hover:bg-[#dcece6]"><BookOpen className="size-[18px]" />Explore themes</a></div>
+        {reviewWords.length ? <div className="grid divide-y divide-border/70 md:grid-cols-3 md:divide-x md:divide-y-0">{reviewWords.map((word) => <a href="/vocabulary/dining-out" key={word.id} className="group flex items-center gap-3 px-6 py-5 text-left transition hover:bg-[#fafafa]"><span className={`word-dot ${word.tone}`} /><span className="min-w-0 flex-1"><strong className="block text-[15px] font-semibold">{word.spanish}</strong><span className="block truncate text-sm text-muted-foreground">{word.english}</span></span><ArrowRight className="size-4 text-[#75948b] transition group-hover:translate-x-1" /></a>)}</div> : <div className="flex flex-col items-center justify-between gap-4 px-6 py-7 text-center sm:flex-row sm:text-left"><div><strong className="text-[15px]">No phrases are waiting for review.</strong><p className="mt-1 text-sm text-muted-foreground">Explore a vocabulary theme to find the expressions worth practicing.</p></div><a href="/vocabulary" className="inline-flex shrink-0 items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-white">Choose a theme<ArrowRight className="size-4" /></a></div>}
       </section>
 
       <section id="progress" className="surface mx-auto mt-5 max-w-[1360px] overflow-hidden rounded-[28px]">
