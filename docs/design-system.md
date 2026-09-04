@@ -15,7 +15,7 @@ Executable tokens and shared hero styles live in [`app/design-system.css`](../ap
 | Page canvas | `--brand-canvas` / `#f6f1e8` | Warm cream page background |
 | Surface | `--brand-surface` / `#fffdfa` | Headers, cards, light controls |
 | Hero | `--brand-hero-fill` | Vocabulary's 115° coral `#e9513d` → orange `#ef6a43` at 48% → marigold `#f4a43b` gradient |
-| Wordmark accent | `--brand-flag-red` / `#aa151b`, `--brand-flag-gold` / `#f1bf00` | Unboxed Spanish-flag stripes inside the ES lettering |
+| Wordmark accent | `--brand-flag-red` / `#aa151b`, `--brand-flag-gold` / `#f1bf00` | Small red ES in a white box with a yellow outer frame |
 | Strong warm ink | `--brand-ink` / `#7f302b` | Text on cream and peach; light hero controls |
 | Focus ink | `--brand-ink-strong` / `#7b211b` | Focus outlines and deep warm emphasis |
 | Supporting warm ink | `--brand-ink-muted` / `#79564c` | Descriptions on pale warm surfaces |
@@ -25,12 +25,12 @@ Executable tokens and shared hero styles live in [`app/design-system.css`](../ap
 
 Do not introduce cobalt as a primary interface color or restore a dark-green welcome background. Green and blue occur in the existing illustration palette, topic-specific pastel cards, and progress states; that does not make either a default hero or brand color. Preserve those contextual roles. The legacy global `--primary` and dark-green panels are not the reference for new brand surfaces.
 
-Use white for large type over the coral hero. The compact red–gold–red ES lettering is the wordmark exception. For regular-size copy and controls, prefer dark terracotta on cream/gold; do not assume small white text on the orange end has adequate contrast. Retain visible keyboard focus.
+Use white for large type over the coral hero. The compact red ES mark uses its own white surface and yellow frame. For regular-size copy and controls, prefer dark terracotta on cream/gold; do not assume small white text on the orange end has adequate contrast. Retain visible keyboard focus.
 
 ## Typography, surfaces, and layout
 
 - Use the existing Geist sans family; do not introduce another font or wordmark treatment.
-- Reuse `Brand` and `.brand-es`. Keep ES unboxed and render the letters with the Spanish red–gold–red flag treatment at every scale. Do not place ES inside a contrasting rounded rectangle.
+- Reuse `Brand` and `.brand-es`. Set “Kurt” as the primary word and position a much smaller ES at its upper right. ES uses red lettering in a white box with a yellow outer frame; keep the mark compact and visually secondary at every scale.
 - Use tightly tracked, semibold or bold display headings, following vocabulary's approximately `-.055em` tracking. Body text remains normally tracked and readable.
 - Use a 1360px content maximum, 12px mobile / 20px larger page gutters, and the existing 20px header-to-content gap.
 - Learning and Join screens reuse `.app-header`: light surface, 64px height, 22px rounded corners, subtle border and warm shadow. The title screen uses one `.brand-hero` pane with a continuous orange gradient and no header. Show the large KurtES title and the Join / Sign in pair once; do not duplicate the wordmark or Sign in in the top corners.
@@ -53,7 +53,7 @@ Profile avatars use a visible 2px colored ring, including image and initials fal
 
 Follow [`illustration-library.md`](illustration-library.md) and [`learner-avatar-reference.md`](learner-avatar-reference.md). These retain the detailed generation and identity rules.
 
-Reuse the transparent, tactile 3D assets. Kurt is the guide; objects identify vocabulary topics. Use `lib/illustrations.ts` for topic assets and Lucide for functional icons. Do not substitute OS emoji, generic flat illustration, new character styling, or CSS drawings. Keep the unboxed Spanish-flag ES wordmark treatment; artwork's broader colors are not an invitation to redesign UI colors.
+Reuse the transparent, tactile 3D assets. Kurt is the guide; objects identify vocabulary topics. Use `lib/illustrations.ts` for topic assets and Lucide for functional icons. Do not substitute OS emoji, generic flat illustration, new character styling, or CSS drawings. Keep the compact upper-right ES box treatment; artwork's broader colors are not an invitation to redesign UI colors.
 
 ## Voice
 
@@ -69,7 +69,7 @@ Keep explanations and errors useful. Preserve Spanish in lesson content and exam
 
 Before designing, read this file and the relevant implemented vocabulary screen. Reuse its tokens, components, and registered artwork. Do not treat the latest generated mockup as a new source of truth. New explicit user feedback supersedes this document; record the correction here and in the shared implementation as part of the same change.
 
-Before delivery, check that new screens use shared styles, the Spanish-flag ES wordmark treatment is unchanged, navigation is conventional, no rejected taglines or primary palettes have returned, and required controls remain readable and usable. Run the build and relevant static checks. When visual browser testing is requested, check desktop and mobile against the vocabulary reference.
+Before delivery, check that new screens use shared styles, the compact upper-right ES mark is unchanged, navigation is conventional, no rejected taglines or primary palettes have returned, and required controls remain readable and usable. Run the build and relevant static checks. When visual browser testing is requested, check desktop and mobile against the vocabulary reference.
 
 ## Join flow
 
