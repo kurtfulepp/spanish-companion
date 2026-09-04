@@ -23,6 +23,14 @@ In product copy, call this a **personal avatar**, not an emoji. “Emoji” can 
 - Warm KurtES accent colors—coral, marigold, turquoise, cobalt, and leafy green—used selectively rather than applied to every character.
 - No words, logos, flags, stereotypes, watermarks, scenery, or decorative props in the master avatar.
 
+## Product illustration rule
+
+KurtES does not use operating-system emoji as section, topic, feature, milestone, or empty-state artwork. OS emoji vary by platform and break the product's visual identity.
+
+Use a bespoke KurtES illustration instead. Product illustrations should share the avatar's cinematic 3D language: rounded forms, tactile materials, soft front-left studio light, warm rim light, clean silhouettes, and the coral, terracotta, marigold, turquoise, cobalt, leafy-green, and warm-cream palette. They may depict objects or compact scenes; Kurt's face should appear only when he is acting as the guide.
+
+Lucide icons remain appropriate for functional controls such as navigation, playback, close, check, and directional actions. The rule applies to expressive artwork, not utility iconography.
+
 ## Personalization rules
 
 The source photo determines the learner's visible identity. Do not copy Kurt's hair, glasses, facial structure, clothing, ethnicity, or gender presentation unless those traits are present in the learner's image or explicitly selected by the learner.
@@ -107,4 +115,3 @@ Approve an asset only when all answers are yes:
 ## Implementation note
 
 The onboarding build should treat avatar generation as an asynchronous job with `uploading`, `generating`, `ready`, `failed`, and `deleted` states. Store consent time, generation status, and private asset locations against the authenticated profile. The production implementation should use a server-side image-generation call so credentials are never exposed in the browser.
-
