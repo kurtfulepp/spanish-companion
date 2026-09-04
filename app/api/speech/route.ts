@@ -37,6 +37,19 @@ export async function POST(request: Request) {
     );
   }
 
+  const { data: withinQuota, error: quotaError } = await supabase.rpc(
+    'consume_speech_quota',
+    { p_character_count: text.length },
+  );
+
+  if (quotaError) {
+    return NextResponse.json({ error: 'Speech service is temporarily unavailable.' }, { status: 503 });
+  }
+
+  if (!withinQuota) {
+    return NextResponse.json({ error: 'Speech limit reached. Please try again later.' }, { status: 429 });
+  }
+
   const response = await fetch(
     `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}?output_format=mp3_44100_128`,
     {

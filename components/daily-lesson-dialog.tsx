@@ -85,9 +85,9 @@ export function DailyLessonDialog({ open, onOpenChange, level, voice, onComplete
     const supabase = createClient();
     const { data: auth } = await supabase.auth.getUser();
     if (!auth.user) { window.location.replace('/sign-in'); return; }
-    const { data, error } = await supabase.from('lesson_attempts').insert({ user_id: auth.user.id, lesson_id: lesson.id, total_activities: activities.length }).select('id').single();
+    const { data, error } = await supabase.rpc('start_lesson_attempt', { p_lesson_id: lesson.id });
     if (error || !data) setMessage('The lesson could not be started. Please try again.');
-    else { setAttemptId(data.id); setView('activity'); }
+    else { setAttemptId(data); setView('activity'); }
     setSaving(false);
   }
 
@@ -96,17 +96,14 @@ export function DailyLessonDialog({ open, onOpenChange, level, voice, onComplete
     setSaving(true);
     setMessage('');
     const activity = activities[activityIndex];
-    const isCorrect = selected === activity.correct_answer;
     const supabase = createClient();
     const { data: auth } = await supabase.auth.getUser();
     if (!auth.user) { window.location.replace('/sign-in'); return; }
-    const { error } = await supabase.from('lesson_responses').upsert({
-      attempt_id: attemptId,
-      activity_id: activity.id,
-      user_id: auth.user.id,
-      answer: selected,
-      is_correct: isCorrect,
-    }, { onConflict: 'attempt_id,activity_id' });
+    const { data: isCorrect, error } = await supabase.rpc('submit_lesson_response', {
+      p_attempt_id: attemptId,
+      p_activity_id: activity.id,
+      p_answer: selected,
+    });
     if (error) setMessage('Your answer could not be saved. Please try again.');
     else {
       if (isCorrect) setScore((current) => current + 1);
@@ -125,9 +122,10 @@ export function DailyLessonDialog({ open, onOpenChange, level, voice, onComplete
     }
     if (!attemptId) return;
     setSaving(true);
-    const { error } = await createClient().from('lesson_attempts').update({ status: 'completed', score, completed_at: new Date().toISOString() }).eq('id', attemptId);
+    const { data: savedScore, error } = await createClient().rpc('complete_lesson_attempt', { p_attempt_id: attemptId });
     if (error) setMessage('The lesson result could not be saved. Please try again.');
     else {
+      if (typeof savedScore === 'number') setScore(savedScore);
       setView('complete');
       await onComplete();
     }

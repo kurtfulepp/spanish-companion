@@ -56,34 +56,13 @@ export function LevelAssessmentDialog({ profile, onProfileChange }: { profile: L
     const { data } = await supabase.auth.getUser();
     if (!data.user) { window.location.replace('/sign-in'); return; }
 
-    let attemptId: string | null = null;
     if (source === 'assessed' && completedAnswers) {
-      const score = completedAnswers.reduce((total, answer, index) => total + Number(answer === questions[index].correct), 0);
-      const { data: attempt, error: attemptError } = await supabase.from('assessment_attempts').insert({
-        user_id: data.user.id,
-        status: 'completed',
-        score,
-        total_points: questions.length,
-        recommended_level: level,
-        accepted_level: level,
-        completed_at: new Date().toISOString(),
-      }).select('id').single();
-      if (attemptError || !attempt) {
+      const { error: attemptError } = await supabase.rpc('complete_level_assessment', {
+        p_answers: completedAnswers,
+        p_accepted_level: level,
+      });
+      if (attemptError) {
         setMessage('The result could not be saved. Please try again.');
-        setSaving(false);
-        return;
-      }
-      attemptId = attempt.id;
-      const { error: answersError } = await supabase.from('assessment_answers').insert(completedAnswers.map((answer, index) => ({
-        attempt_id: attemptId,
-        user_id: data.user.id,
-        question_key: questions[index].key,
-        selected_answer: String(answer),
-        is_correct: answer === questions[index].correct,
-        points: Number(answer === questions[index].correct),
-      })));
-      if (answersError) {
-        setMessage('Your answers could not be saved. Please try again.');
         setSaving(false);
         return;
       }
