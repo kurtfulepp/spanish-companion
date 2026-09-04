@@ -54,10 +54,10 @@
 
 /* Welcome extends the vocabulary design system; no route-specific palette. */
 .welcome-shell { min-height:100svh; display:flex; flex-direction:column; overflow:hidden; padding:.75rem .75rem 1.25rem; background:var(--brand-canvas); }
-.welcome-header { width:100%; color:var(--brand-ink); }
+.welcome-pane { flex:1; display:flex; flex-direction:column; width:100%; max-width:var(--brand-content-width); margin-inline:auto; }
 .welcome-sign-in { display:inline-flex; align-items:center; gap:.75rem; min-height:2.75rem; padding:.5rem 1rem; border:1px solid var(--brand-border); border-radius:999px; font-size:.875rem; font-weight:600; transition:background .2s; }
 .welcome-sign-in:hover { background:var(--brand-cream); }
-.welcome-content { flex:1; width:100%; max-width:var(--brand-content-width); margin:1.25rem auto 0; display:grid; grid-template-columns:1.1fr 1fr; align-items:center; gap:2rem; padding:2rem clamp(1.5rem,5vw,5rem); }
+.welcome-content { flex:1; width:100%; display:grid; grid-template-columns:1.1fr 1fr; align-items:center; gap:2rem; padding:2rem clamp(1.5rem,5vw,5rem); }
 .welcome-copy { position:relative; z-index:2; }
 .welcome-eyebrow { color:var(--brand-ink-strong); font-size:1rem; font-weight:600; }
 .welcome-title { display:flex; align-items:center; margin-top:1.5rem; font-size:clamp(4rem,8.5vw,8.5rem); font-weight:700; line-height:1.1; letter-spacing:-.065em; }
@@ -78,24 +78,6 @@
   .welcome-greeting { right:.5rem; font-size:1.125rem; }
   .welcome-portrait { width:100%; max-width:20rem; margin:auto; }
   .welcome-coach { height:clamp(16rem,38svh,24rem); }
-}
-@media (prefers-reduced-motion:no-preference) {
-  .welcome-copy { animation:appear .65s ease-out both; }
-  .welcome-portrait { animation:appear .8s .1s ease-out both; }
-  .welcome-portrait[data-greeting-ready] .welcome-greeting { opacity:0; }
-  .welcome-portrait[data-greeting-ready="true"] .welcome-coach { transform-origin:50% 90%; animation:coach-greeting 1.5s .25s ease-in-out both; }
-  .welcome-portrait[data-greeting-ready="true"] .welcome-greeting { animation:coach-hola .4s 1.8s cubic-bezier(.2,.8,.3,1.2) both; }
-  @keyframes coach-greeting {
-    0%,100% { transform:rotate(0) translateY(0); }
-    18% { transform:rotate(-4deg) translateY(-4px); }
-    38% { transform:rotate(4deg) translateY(-6px); }
-    58% { transform:rotate(-3deg) translateY(-4px); }
-    78% { transform:rotate(2deg) translateY(-2px); }
-  }
-  @keyframes coach-hola {
-    from { opacity:0; transform:translateY(8px) rotate(3deg) scale(.85); }
-    to { opacity:1; transform:translateY(0) rotate(8deg) scale(1); }
-  }
 }
 
 .join-shell { min-height:100svh; display:flex; flex-direction:column; padding:.75rem .75rem 1.25rem; background:var(--brand-canvas); color:var(--brand-ink); }

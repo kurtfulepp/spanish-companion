@@ -47,12 +47,17 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (!isAuthenticated && !isSignIn && !isJoin && !isAuthCallback) {
+    if (request.nextUrl.pathname.startsWith('/api/')) {
+      return addSecurityHeaders(NextResponse.json({ error: 'Authentication required' }, { status: 401 }));
+    }
     const url = request.nextUrl.clone();
-    url.pathname = '/sign-in';
+    url.pathname = '/';
+    url.search = '';
     return redirectWithSession(url);
   }
 
-  if (isAuthenticated && (isSignIn || isJoin)) {
+  // Join always opens account creation; Sign in may reuse a valid session.
+  if (isAuthenticated && isSignIn) {
     const url = request.nextUrl.clone();
     url.pathname = '/today';
     return redirectWithSession(url);

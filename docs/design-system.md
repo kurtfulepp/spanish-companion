@@ -33,7 +33,7 @@ Use white for large type over the coral hero. For regular-size copy and controls
 - Reuse `Brand` and `.brand-es`. Keep the gold ES badge and its terracotta detail at every scale.
 - Use tightly tracked, semibold or bold display headings, following vocabulary's approximately `-.055em` tracking. Body text remains normally tracked and readable.
 - Use a 1360px content maximum, 12px mobile / 20px larger page gutters, and the existing 20px header-to-content gap.
-- Reuse `.app-header`: light surface, 64px height, 22px rounded corners, subtle border and warm shadow. Brand belongs at the left; Sign in belongs at the right on the opening page.
+- Learning and Join screens reuse `.app-header`: light surface, 64px height, 22px rounded corners, subtle border and warm shadow. The title screen uses one `.brand-hero` pane with a continuous orange gradient and no header. Show the large KurtES title and the Join / Sign in pair once; do not duplicate the wordmark or Sign in in the top corners.
 - Use a gold pill with terracotta text for the active navigation destination. Authenticated headers keep Profile/Settings and Sign out visible at the right; do not replace those account controls with a generic hamburger.
 - Sign out returns to the public opening screen, where Sign in occupies the same conventional upper-right position.
 - The upper-left brand is the KurtES wordmark only. A learner's personal avatar appears once, at the upper right, and opens Profile and Settings when selected.
@@ -43,7 +43,7 @@ Use white for large type over the coral hero. For regular-size copy and controls
 - On mobile, stack text and artwork without clipping controls or forcing horizontal scrolling. Allow vertical scrolling on short screens and with enlarged text.
 - Motion is brief and subtle; respect reduced-motion preferences.
 
-The opening screen omits the “Spanish practice” label. Join and Sign in have equal width and height; omit the Join arrow and distinguish hierarchy through surface treatment, not size. Its authentication actions are Join (account creation) and Sign in (existing account), not “Start practice”. Retain the conventional header Sign in link.
+The opening screen omits the “Spanish practice” label. Join and Sign in have equal width and height; omit the Join arrow and distinguish hierarchy through surface treatment, not size. Its authentication actions are Join (account creation) and Sign in (existing account), not “Start practice”. The title screen has no duplicate header Sign in link.
 
 Authentication entry links use full document navigation (`<a href="/sign-in">` and `<a href="/join">`), following the existing vocabulary navigation fix for vinext. Sign in uses the existing Supabase email-and-password flow and returns to `/today` after authentication. Preserve refreshed session cookies through server redirects; do not add an alternate authentication provider or bypass.
 
@@ -72,3 +72,7 @@ Before delivery, check that new screens use shared styles, the logo is unchanged
 ## Join flow
 
 Use a full-screen, sequential Email → Password → Review flow with bottom progress dots, Back/Continue navigation, and a final Create account action. Retain entered values between slides, validate before advancing, keep passwords only in component memory, and respect reduced motion. Dots identify the active step and allow returning to reached steps; they must not bypass field validation. See `docs/account-onboarding.md` for backend mapping.
+
+## Welcome character
+
+Use the original, unmodified still coach image with “¡Hola!” visible immediately. The user rejected both the whole-body wobble and the masked-arm wave. Do not reintroduce character animation unless explicitly requested again.
