@@ -12,20 +12,24 @@ export async function POST(request: Request) {
   }
 
   const apiKey = process.env.ELEVENLABS_API_KEY;
-  const voiceId = process.env.ELEVENLABS_VOICE_ID;
+  const maleVoiceId = process.env.ELEVENLABS_MALE_VOICE_ID ?? process.env.ELEVENLABS_VOICE_ID;
+  const femaleVoiceId = process.env.ELEVENLABS_FEMALE_VOICE_ID;
 
-  if (!apiKey || !voiceId) {
-    return NextResponse.json({ error: 'Speech service is not configured.' }, { status: 503 });
-  }
-
-  let body: { text?: unknown };
+  let body: { text?: unknown; voice?: unknown };
   try {
-    body = (await request.json()) as { text?: unknown };
+    body = (await request.json()) as { text?: unknown; voice?: unknown };
   } catch {
     return NextResponse.json({ error: 'Invalid request.' }, { status: 400 });
   }
 
   const text = typeof body.text === 'string' ? body.text.trim() : '';
+  const voice = body.voice === 'female' ? 'female' : 'male';
+  const voiceId = voice === 'female' ? femaleVoiceId : maleVoiceId;
+
+  if (!apiKey || !voiceId) {
+    return NextResponse.json({ error: 'Speech service is not configured.' }, { status: 503 });
+  }
+
   if (!text || text.length > MAX_TEXT_LENGTH) {
     return NextResponse.json(
       { error: `Text must contain between 1 and ${MAX_TEXT_LENGTH} characters.` },

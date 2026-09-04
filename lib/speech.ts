@@ -1,6 +1,8 @@
 const audioCache = new Map<string, string>();
 let activeAudio: HTMLAudioElement | null = null;
 
+export type VoicePreference = 'male' | 'female';
+
 function speakWithBrowser(text: string) {
   if (!('speechSynthesis' in window)) return;
 
@@ -11,21 +13,22 @@ function speakWithBrowser(text: string) {
   window.speechSynthesis.speak(utterance);
 }
 
-export async function playSpanishSpeech(text: string) {
+export async function playSpanishSpeech(text: string, voice: VoicePreference = 'male') {
   try {
-    let audioUrl = audioCache.get(text);
+    const cacheKey = `${voice}:${text}`;
+    let audioUrl = audioCache.get(cacheKey);
 
     if (!audioUrl) {
       const response = await fetch('/api/speech', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, voice }),
       });
 
       if (!response.ok) throw new Error('Speech generation failed');
 
       audioUrl = URL.createObjectURL(await response.blob());
-      audioCache.set(text, audioUrl);
+      audioCache.set(cacheKey, audioUrl);
     }
 
     if (activeAudio) {

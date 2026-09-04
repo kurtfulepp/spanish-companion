@@ -60,7 +60,7 @@ export default function Home() {
   const [lessonOpen, setLessonOpen] = useState(false);
   const [activeEmail, setActiveEmail] = useState<string | null>(null);
   const [completionDates, setCompletionDates] = useState<string[]>([]);
-  const [profile, setProfile] = useState<LearnerProfile>({ displayName: '', proficiencyLevel: '' });
+  const [profile, setProfile] = useState<LearnerProfile>({ displayName: '', proficiencyLevel: '', voicePreference: 'male' });
   const updateProfile = useCallback((nextProfile: LearnerProfile) => setProfile(nextProfile), []);
 
   const refreshProgress = useCallback(async () => {
@@ -105,7 +105,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-background px-3 pb-5 pt-3 text-foreground sm:px-5">
-      <DailyLessonDialog open={lessonOpen} onOpenChange={setLessonOpen} level={profile.proficiencyLevel || 'B2'} onComplete={refreshProgress} />
+      <DailyLessonDialog open={lessonOpen} onOpenChange={setLessonOpen} level={profile.proficiencyLevel || 'B2'} voice={profile.voicePreference} onComplete={refreshProgress} />
       <header className="app-header">
         <a href="#" aria-label="KurtES home"><Brand /></a>
         <nav className="hidden items-center gap-1 md:flex" aria-label="Main navigation"><a className="nav-link nav-link-active" href="#practice">Today</a><a className="nav-link" href="#vocabulary">Vocabulary</a><a className="nav-link" href="#progress">Practice</a></nav>
@@ -130,7 +130,7 @@ export default function Home() {
         <article className="surface order-1 flex min-h-[620px] flex-col overflow-hidden rounded-[32px] bg-[#fffaf0] lg:order-2">
           <div className="flex items-center justify-between px-6 pt-6 sm:px-9 sm:pt-8"><div className="inline-flex items-center gap-2 rounded-full bg-accent px-3 py-1.5 text-sm font-medium text-[#315d52]"><Sparkles className="size-4" />Today’s lesson</div><button className="icon-button" aria-label="More options"><MoreHorizontal className="size-5" /></button></div>
           <div className="grid flex-1 items-center gap-4 px-6 py-8 sm:px-10 lg:grid-cols-[1.05fr_.8fr] lg:px-12 lg:py-5">
-            <div className="relative z-10 text-center lg:text-left"><LevelAssessmentDialog profile={profile} onProfileChange={updateProfile} /><h1 className="mt-7 font-heading text-[clamp(3rem,6.3vw,6.1rem)] font-semibold leading-[.92] tracking-[-.07em] text-[#173c34]">¿Qué planes<br />tienes hoy?</h1><p className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">Listen and respond naturally. Add one detail that makes the answer feel like yours.</p><button onClick={() => void playSpanishSpeech('¿Qué planes tienes hoy?')} className="mt-7 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-primary shadow-sm ring-1 ring-black/5 transition hover:-translate-y-0.5 hover:shadow-md active:translate-y-0" aria-label="Hear the phrase"><Volume2 className="size-[18px]" />Hear the phrase</button></div>
+            <div className="relative z-10 text-center lg:text-left"><LevelAssessmentDialog profile={profile} onProfileChange={updateProfile} /><h1 className="mt-7 font-heading text-[clamp(3rem,6.3vw,6.1rem)] font-semibold leading-[.92] tracking-[-.07em] text-[#173c34]">¿Qué planes<br />tienes hoy?</h1><p className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">Listen and respond naturally. Add one detail that makes the answer feel like yours.</p><button onClick={() => void playSpanishSpeech('¿Qué planes tienes hoy?', profile.voicePreference)} className="mt-7 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-primary shadow-sm ring-1 ring-black/5 transition hover:-translate-y-0.5 hover:shadow-md active:translate-y-0" aria-label="Hear the phrase"><Volume2 className="size-[18px]" />Hear the phrase</button></div>
             <div className="relative mx-auto flex h-[320px] w-full max-w-[390px] items-center justify-center lg:h-[465px]"><div className="absolute bottom-3 h-10 w-52 rounded-full bg-[#173c34]/10 blur-xl" /><img src="/brand/kurtes-center.png" alt="KurtES coach smiling and ready for today’s lesson" className="relative max-h-full w-auto drop-shadow-[0_22px_24px_rgba(78,55,32,.18)]" /></div>
           </div>
           <div className="embroidery-rule h-1 w-full" /><div className="flex flex-col items-center justify-between gap-4 bg-[#fffdfa] px-6 py-5 sm:flex-row sm:px-8"><span className="text-sm text-muted-foreground">About 5 minutes · 4 activities</span><Button onClick={() => setLessonOpen(true)} className="h-12 w-full rounded-full bg-primary px-7 text-[15px] font-semibold shadow-[0_8px_22px_rgba(23,60,52,.16)] hover:bg-[#245247] sm:w-auto"><Play className="size-4 fill-current" />Start lesson</Button></div>

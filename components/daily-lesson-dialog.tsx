@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
 import { createClient } from '@/lib/supabase/client';
-import { playSpanishSpeech } from '@/lib/speech';
+import { playSpanishSpeech, type VoicePreference } from '@/lib/speech';
 
 type Activity = {
   id: string;
@@ -30,7 +30,7 @@ type Lesson = {
 
 type View = 'intro' | 'activity' | 'complete';
 
-export function DailyLessonDialog({ open, onOpenChange, level, onComplete }: { open: boolean; onOpenChange: (open: boolean) => void; level: string; onComplete: () => void | Promise<void> }) {
+export function DailyLessonDialog({ open, onOpenChange, level, voice, onComplete }: { open: boolean; onOpenChange: (open: boolean) => void; level: string; voice: VoicePreference; onComplete: () => void | Promise<void> }) {
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [view, setView] = useState<View>('intro');
@@ -154,7 +154,7 @@ export function DailyLessonDialog({ open, onOpenChange, level, onComplete }: { o
         {!loading && view === 'activity' && activity && <div className="grid gap-6 p-6 sm:p-8">
           <div><div className="flex items-center justify-between text-sm font-medium text-muted-foreground"><span>Activity {activityIndex + 1} of {activities.length}</span><span>{activity.activity_type === 'listening' ? 'Listening' : activity.activity_type === 'response' ? 'Natural response' : 'Practice'}</span></div><Progress value={(activityIndex + 1) / activities.length * 100} className="mt-3" /></div>
           <DialogHeader><p className="text-sm font-semibold text-[#4c7b70]">{activity.instruction}</p><DialogTitle className="text-3xl font-semibold leading-tight tracking-[-.04em]">{activity.prompt}</DialogTitle></DialogHeader>
-          {activity.audio_text && <button onClick={() => void playSpanishSpeech(activity.audio_text!)} className="inline-flex w-fit items-center gap-2 rounded-full bg-[#eef6f2] px-4 py-2.5 text-sm font-semibold text-primary transition hover:bg-[#e2f0ea]"><Headphones className="size-4" />Listen</button>}
+          {activity.audio_text && <button onClick={() => void playSpanishSpeech(activity.audio_text!, voice)} className="inline-flex w-fit items-center gap-2 rounded-full bg-[#eef6f2] px-4 py-2.5 text-sm font-semibold text-primary transition hover:bg-[#e2f0ea]"><Headphones className="size-4" />Listen</button>}
           <div className="grid gap-2.5">{activity.options.map((option, index) => {
             const isSelected = selected === option;
             const isAnswer = checked && option === activity.correct_answer;
@@ -165,7 +165,7 @@ export function DailyLessonDialog({ open, onOpenChange, level, onComplete }: { o
           {!checked ? <Button onClick={() => void checkAnswer()} disabled={!selected || saving} className="h-12 rounded-full text-base font-bold">{saving ? 'Saving…' : 'Check answer'}</Button> : <Button onClick={() => void continueLesson()} disabled={saving} className="h-12 rounded-full text-base font-bold">{activityIndex === activities.length - 1 ? 'Complete lesson' : 'Continue'}<ChevronRight className="size-4" /></Button>}
         </div>}
 
-        {!loading && view === 'complete' && lesson && <div className="grid gap-7 p-7 text-center sm:p-10"><span className="mx-auto grid size-16 place-items-center rounded-full bg-[#e9f6f0] text-[#32806a]"><Check className="size-8" /></span><DialogHeader><DialogTitle className="text-4xl font-semibold tracking-[-.055em] text-[#173c34]">Lesson complete</DialogTitle><DialogDescription className="text-base leading-relaxed">You answered {score} of {activities.length} correctly. Your progress and today’s completion are saved.</DialogDescription></DialogHeader><div className="rounded-[22px] bg-[#fff4dc] p-5"><p className="text-sm font-medium text-[#8a6424]">Today’s phrase</p><p className="mt-2 text-2xl font-semibold text-[#694b18]">¿Qué planes tienes hoy?</p><button onClick={() => void playSpanishSpeech('¿Qué planes tienes hoy?')} className="mx-auto mt-3 inline-flex items-center gap-2 text-sm font-semibold text-[#694b18]"><Volume2 className="size-4" />Hear it again</button></div><div className="flex flex-col gap-3 sm:flex-row"><Button onClick={() => onOpenChange(false)} className="h-12 flex-1 rounded-full text-base font-bold">Back to today</Button><Button variant="outline" onClick={() => { setView('intro'); setActivityIndex(0); setSelected(''); setChecked(false); setScore(0); setAttemptId(null); }} className="h-12 rounded-full px-6"><RotateCcw className="size-4" />Practice again</Button></div></div>}
+        {!loading && view === 'complete' && lesson && <div className="grid gap-7 p-7 text-center sm:p-10"><span className="mx-auto grid size-16 place-items-center rounded-full bg-[#e9f6f0] text-[#32806a]"><Check className="size-8" /></span><DialogHeader><DialogTitle className="text-4xl font-semibold tracking-[-.055em] text-[#173c34]">Lesson complete</DialogTitle><DialogDescription className="text-base leading-relaxed">You answered {score} of {activities.length} correctly. Your progress and today’s completion are saved.</DialogDescription></DialogHeader><div className="rounded-[22px] bg-[#fff4dc] p-5"><p className="text-sm font-medium text-[#8a6424]">Today’s phrase</p><p className="mt-2 text-2xl font-semibold text-[#694b18]">¿Qué planes tienes hoy?</p><button onClick={() => void playSpanishSpeech('¿Qué planes tienes hoy?', voice)} className="mx-auto mt-3 inline-flex items-center gap-2 text-sm font-semibold text-[#694b18]"><Volume2 className="size-4" />Hear it again</button></div><div className="flex flex-col gap-3 sm:flex-row"><Button onClick={() => onOpenChange(false)} className="h-12 flex-1 rounded-full text-base font-bold">Back to today</Button><Button variant="outline" onClick={() => { setView('intro'); setActivityIndex(0); setSelected(''); setChecked(false); setScore(0); setAttemptId(null); }} className="h-12 rounded-full px-6"><RotateCcw className="size-4" />Practice again</Button></div></div>}
       </DialogContent>
     </Dialog>
   );
