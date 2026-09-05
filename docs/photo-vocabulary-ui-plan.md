@@ -117,3 +117,8 @@ Account storage now replaces browser-only saves for both real and FPO lists. The
 ## Practice connected — 2026-09-05
 
 The four requested connection steps are implemented: list practice entry, profile-owned per-word status, automatic completion with manual archive/restore, and an integrated photo-to-practice journey. The real desktop browser journey and fresh-tab profile retrieval passed. See `custom-vocabulary-qa.md` for exact behavior, security results, and the physical-device/dependency-audit limitations. Public frontend release remains separate.
+
+
+## Public demo retired — 2026-09-05
+
+The kitchen demo is no longer a public flow. Demo links and simulated analysis are removed, and old `?demo=kitchen` URLs open the regular uploader. `PhotoVocabularyReview` requires actual API results; newly saved lists have photo provenance. The synthetic image and kitchen vocabulary remain in `tests/fixtures` for internal testing, outside the public asset directory. Existing saved demo lists retain FPO labels and are not deleted automatically. The earlier simulation checkpoints above are historical. See `future-cleanup.md` for the remaining cleanup and release backlog.

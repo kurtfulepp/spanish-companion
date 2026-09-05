@@ -2,73 +2,41 @@
 /* oxlint-disable next/no-html-link-for-pages, next/no-img-element */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, Check, ChevronDown, ImagePlus, LoaderCircle, Plus, RefreshCw, Trash2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, ChevronDown, ImagePlus, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { VocabularyHeader } from '@/components/vocabulary-header';
 import type { PhotoAnalysis } from '@/lib/photo-analysis';
-import { KITCHEN_PHOTO, kitchenWords, wordErrors, type DemoWord } from '@/lib/photo-vocabulary-demo';
+import { wordErrors, type ReviewWord } from '@/lib/photo-vocabulary-review';
 import { createClient } from '@/lib/supabase/client';
 import { saveCustomList } from '@/lib/custom-vocabulary-lists';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import listStyles from './demo-vocabulary-lists.module.css';
-import { preparePhoto } from '@/lib/photo-input';
 import base from './photo-vocabulary.module.css';
-import styles from './photo-vocabulary-demo.module.css';
+import styles from './photo-vocabulary-review.module.css';
 
-type Step = 'photo' | 'finding' | 'review' | 'saved';
+type Step = 'review' | 'saved';
 
-type Props = { result?: PhotoAnalysis; photoUrl?: string | null; onChoosePhoto?: () => void; onReleasePhoto?: () => void };
-export function PhotoVocabularyDemo({ result, photoUrl, onChoosePhoto, onReleasePhoto }: Props = {}) {
-  const demo = !result;
-  const [step, setStep] = useState<Step>(result ? 'review' : 'photo');
-  const [photo, setPhoto] = useState<string | null>(result ? photoUrl ?? null : KITCHEN_PHOTO);
-  const [words, setWords] = useState<DemoWord[]>(() => result ? result.items.map((item, i) => ({ id: `photo-${i}`, english: item.english, spanish: item.spanish, note: item.usage_note ?? '', selected: true })) : kitchenWords());
-  const [title, setTitle] = useState(result?.suggested_title ?? 'My kitchen');
+type Props = { result: PhotoAnalysis; photoUrl?: string | null; onChoosePhoto?: () => void; onReleasePhoto?: () => void };
+export function PhotoVocabularyReview({ result, photoUrl, onChoosePhoto, onReleasePhoto }: Props) {
+  const [step, setStep] = useState<Step>('review');
+  const [photo, setPhoto] = useState<string | null>(photoUrl ?? null);
+  const [words, setWords] = useState<ReviewWord[]>(() => result.items.map((item, i) => ({ id: `photo-${i}`, english: item.english, spanish: item.spanish, note: item.usage_note ?? '', selected: true })));
+  const [title, setTitle] = useState(result.suggested_title);
   const [naming, setNaming] = useState(false);
   const [savingList, setSavingList] = useState(false);
   const [saveError, setSaveError] = useState('');
   const saveInFlight = useRef(false);
   const savedId = useRef<string | null>(null);
-  const [error, setError] = useState('');
-  const [preparing, setPreparing] = useState(false);
   const [photoOpen, setPhotoOpen] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
-  const fileInput = useRef<HTMLInputElement>(null);
-  const pendingPhoto = useRef(0);
   const onProfileChange = useCallback(() => {}, []);
   const selected = words.filter((word) => word.selected);
   const errors = wordErrors(words);
   const valid = selected.length > 0 && Object.keys(errors).length === 0;
 
   useEffect(() => { heading.current?.focus(); }, [step]);
-  useEffect(() => {
-    if (step !== 'finding') return;
-    // Deliberate demo delay, never an API call or a fabricated progress percentage.
-    const timer = window.setTimeout(() => setStep('review'), 1100);
-    return () => window.clearTimeout(timer);
-  }, [step]);
-  useEffect(() => () => { if (demo && photo?.startsWith('blob:')) URL.revokeObjectURL(photo); }, [photo, demo]);
-  const invalidatePhoto = useCallback(() => { pendingPhoto.current++; }, []);
-  useEffect(() => invalidatePhoto, [invalidatePhoto]);
-
-  function changeWord(id: string, update: Partial<DemoWord>) {
+  function changeWord(id: string, update: Partial<ReviewWord>) {
     setWords((current) => current.map((word) => word.id === id ? { ...word, ...update } : word));
   }
-  function reset() {
-    if (!demo) { onChoosePhoto?.(); return; }
-    invalidatePhoto(); setPhoto(KITCHEN_PHOTO); setWords(kitchenWords()); setTitle('My kitchen');
-    setStep('photo'); setError(''); setPreparing(false); setPhotoOpen(false); savedId.current = null;
-  }
-  async function replacePhoto(file: File) {
-    const request = ++pendingPhoto.current;
-    setPreparing(true); setError('');
-    try {
-      const prepared = await preparePhoto(file);
-      if (request === pendingPhoto.current) setPhoto(URL.createObjectURL(prepared.blob));
-    } catch (failure) {
-      if (request === pendingPhoto.current) setError(failure instanceof Error ? failure.message : 'Choose another photo.');
-    } finally { if (request === pendingPhoto.current) setPreparing(false); }
-  }
-  function findWords() { setWords(kitchenWords()); setError(''); setStep('finding'); }
   function save() {
     if (!valid) return;
     setWords(selected.map((word) => ({ ...word, english: word.english.trim(), spanish: word.spanish.trim() })));
@@ -85,7 +53,7 @@ export function PhotoVocabularyDemo({ result, photoUrl, onChoosePhoto, onRelease
       if (authError || !data.user) throw new Error('Sign in again to save your list.');
       savedId.current ??= crypto.randomUUID();
       await saveCustomList(client, data.user.id, {
-        id: savedId.current, name: title.trim(), source: demo ? 'demo' : 'photo', completed: false, createdAt: new Date().toISOString(),
+        id: savedId.current, name: title.trim(), source: 'photo', completed: false, createdAt: new Date().toISOString(),
         words: selected.map(({ english, spanish }) => ({ english, spanish })),
       });
       window.location.assign('/vocabulary#your-lists');
@@ -99,42 +67,20 @@ export function PhotoVocabularyDemo({ result, photoUrl, onChoosePhoto, onRelease
     <VocabularyHeader onProfileChange={onProfileChange} />
     <div className={base.content}>
       <a className={base.back} href="/vocabulary"><ArrowLeft size={17} />Vocabulary</a>
-      {demo && <div className={styles.fpo}><strong>FPO DATA</strong><p>Kitchen demo · Sample words and simulated analysis. Saved lists belong to your profile; photos are never saved.</p></div>}
       <header className={styles.header}>
-        <div><p className={base.eyebrow}>Photo vocabulary</p><h1 ref={heading} tabIndex={-1}>{step === 'review' ? 'Choose the words to keep' : step === 'saved' ? 'Your list preview' : step === 'finding' ? 'Finding words' : 'Start with a photo'}</h1><p>{step === 'review' ? 'Check the translations. Edit any word and leave out what you don’t need.' : step === 'saved' ? 'This is how your accepted words will appear in a custom list.' : 'Try the kitchen photo below to walk through the experience.'}</p></div>
+        <div><p className={base.eyebrow}>Photo vocabulary</p><h1 ref={heading} tabIndex={-1}>{step === 'review' ? 'Choose the words to keep' : 'Your list preview'}</h1><p>{step === 'review' ? 'Check the translations. Edit any word and leave out what you don’t need.' : 'This is how your accepted words will appear in a custom list.'}</p></div>
         <ol className={styles.steps} aria-label="Photo vocabulary steps">{['Photo', 'Review', 'List'].map((label, index) => {
           const current = step === 'saved' ? 2 : step === 'review' ? 1 : 0;
           return <li key={label} aria-current={current === index ? 'step' : undefined} data-complete={current > index}><span>{current > index ? <Check size={14} /> : index + 1}</span>{label}</li>;
         })}</ol>
       </header>
 
-      {demo && (step === 'photo' || step === 'finding') && <div className={styles.previewLayout}>
-        <section className={base.photoPanel} aria-label="Demo photo preview">
-          <div className={base.previewTop}><h2>Your photo</h2><span>FPO DATA</span></div>
-          <img className={styles.largePhoto} src={photo ?? KITCHEN_PHOTO} alt={photo === KITCHEN_PHOTO ? "Kitchen with cooking utensils, appliances, a mug and apples" : "Selected scene for vocabulary"} />
-          <div className={base.previewActions}>
-            <button className={base.secondaryButton} disabled={step === 'finding' || preparing} onClick={() => fileInput.current?.click()}><RefreshCw size={16} />Replace photo</button>
-            {photo !== KITCHEN_PHOTO && <button className={base.textButton} disabled={step === 'finding'} onClick={() => { invalidatePhoto(); setPreparing(false); setPhoto(KITCHEN_PHOTO); setError(''); }}>Use kitchen photo</button>}
-          </div>
-          <input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" className="sr-only" tabIndex={-1} aria-label="Replace demo photo" onChange={(event) => { const file = event.currentTarget.files?.[0]; if (file) void replacePhoto(file); event.currentTarget.value = ''; }} />
-          {error && <p role="alert" className={base.error}>{error}</p>}
-          {preparing && <output className={base.processing}>Preparing photo…</output>}
-        </section>
-        <aside className={styles.nextPanel}>
-          <span className={base.eyebrow}>From photo to word list</span><h2>A kitchen in two languages</h2>
-          <p>Next, review the everyday objects in English and Spanish. You decide which words belong in your list.</p>
-          <div className={styles.example}><span>cutting board</span><ArrowRight size={16} /><strong>la tabla de cortar</strong></div>
-          <p className={styles.small}>This demo always returns the same kitchen words, even if you replace the photo.</p>
-          {step === 'finding' ? <><output className={styles.finding}><LoaderCircle size={22} className={base.spinner} /><span>Finding words…<small>Simulated for this preview</small></span></output><button className={base.textButton} onClick={() => setStep('photo')}>Cancel</button></> : <button className={base.primaryButton} disabled={preparing} onClick={findWords}>Find words<ArrowRight size={18} /></button>}
-        </aside>
-      </div>}
-
       {step === 'review' && <div className={styles.reviewLayout}>
         <aside className={styles.reference}>
           <button className={styles.photoToggle} onClick={() => setPhotoOpen(!photoOpen)} aria-expanded={photoOpen} aria-controls="reference-photo"><ImagePlus size={17} />Your photo<ChevronDown size={17} /></button>
           <div id="reference-photo" className={`${styles.referenceBody} ${photoOpen ? styles.referenceOpen : ''}`}>
             {photo && <img src={photo} alt="Selected scene for vocabulary" />}
-            <button className={base.textButton} onClick={() => demo ? setStep('photo') : onChoosePhoto?.()}><RefreshCw size={15} />Change photo</button>
+            <button className={base.textButton} onClick={onChoosePhoto}><RefreshCw size={15} />Change photo</button>
           </div>
           <div className={styles.referenceNote}><h2>You have the final say</h2><p>Keep useful words, correct a translation, or add an item that’s missing.</p><p>Spanish nouns include their article: <strong>el</strong> or <strong>la</strong>.</p></div>
         </aside>
@@ -158,10 +104,10 @@ export function PhotoVocabularyDemo({ result, photoUrl, onChoosePhoto, onRelease
       </div>}
 
       {step === 'saved' && <section className={styles.saved} aria-label="List preview">
-        <div className={styles.savedHeader}><span className={styles.savedCheck}><Check size={26} /></span><div><p className={base.eyebrow}>Ready to save{demo ? ' · FPO DATA' : ''}</p><h2>Your selected words</h2><p>{selected.length} {selected.length === 1 ? 'word' : 'words'} in your list preview</p></div></div>
+        <div className={styles.savedHeader}><span className={styles.savedCheck}><Check size={26} /></span><div><p className={base.eyebrow}>Ready to save</p><h2>Your selected words</h2><p>{selected.length} {selected.length === 1 ? 'word' : 'words'} in your list preview</p></div></div>
         <p className={styles.savedNotice}>Review your words, then save and name your list. Your temporary photo preview has been cleared.</p>
         <table className={styles.savedWords}><thead><tr><th scope="col">English</th><th scope="col">Spanish</th></tr></thead><tbody>{selected.map((word) => <tr key={word.id}><td>{word.english}</td><td lang="es">{word.spanish}</td></tr>)}</tbody></table>
-        <div className={styles.savedActions}><button className={base.secondaryButton} onClick={reset}><RefreshCw size={16} />{demo ? 'Try again' : 'Choose another photo'}</button><button className={base.primaryButton} onClick={() => { setSaveError(''); setNaming(true); }}>Save list<ArrowRight size={17} /></button></div>
+        <div className={styles.savedActions}><button className={base.secondaryButton} onClick={onChoosePhoto}><RefreshCw size={16} />Choose another photo</button><button className={base.primaryButton} onClick={() => { setSaveError(''); setNaming(true); }}>Save list<ArrowRight size={17} /></button></div>
       </section>}
     </div>
     <Dialog open={naming} onOpenChange={(open) => { if (!savingList) setNaming(open); }}>
@@ -170,7 +116,7 @@ export function PhotoVocabularyDemo({ result, photoUrl, onChoosePhoto, onRelease
         <DialogDescription>Give these {selected.length} words a name. Your list will appear below Create Your Own on Vocabulary.</DialogDescription>
         <form onSubmit={(event) => void saveNamedList(event)}>
           <label className={styles.listName}>List name<input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="For example, My kitchen" required disabled={savingList} /></label>
-          <p className={listStyles.storageNote}>{demo ? 'FPO DATA · ' : ''}Saved to your profile across devices. No photo is stored.</p>
+          <p className={listStyles.storageNote}>Saved to your profile across devices. No photo is stored.</p>
           {saveError && <p role="alert" className={base.error}>{saveError}</p>}
           <div className={listStyles.dialogActions}><button type="button" className={base.secondaryButton} disabled={savingList} onClick={() => setNaming(false)}>Cancel</button><button type="submit" className={base.primaryButton} disabled={!title.trim() || savingList}>{savingList ? 'Saving…' : 'Save'}</button></div>
         </form>

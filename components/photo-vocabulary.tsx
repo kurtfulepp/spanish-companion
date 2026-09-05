@@ -7,7 +7,7 @@ import { VocabularyHeader } from '@/components/vocabulary-header';
 import { KURTES_ILLUSTRATIONS } from '@/lib/illustrations';
 import { preparePhoto, type PreparedPhoto } from '@/lib/photo-input';
 import { requestPhotoAnalysis, type PhotoAnalysis } from '@/lib/photo-analysis';
-import { PhotoVocabularyDemo } from './photo-vocabulary-demo';
+import { PhotoVocabularyReview } from './photo-vocabulary-review';
 import styles from './photo-vocabulary.module.css';
 
 type Photo = PreparedPhoto & { url: string };
@@ -197,7 +197,7 @@ export function PhotoVocabulary({ initialSource }: { initialSource: 'upload' | '
     }
   }
 
-  if (result) return <PhotoVocabularyDemo result={result} photoUrl={photo?.url ?? null}
+  if (result) return <PhotoVocabularyReview result={result} photoUrl={photo?.url ?? null}
     onChoosePhoto={() => { cancelCamera(); setResult(null); setError(''); }}
     onReleasePhoto={() => setPhoto(null)} />;
 
@@ -209,7 +209,6 @@ export function PhotoVocabulary({ initialSource }: { initialSource: 'upload' | '
         <div><p className={styles.eyebrow}>Your vocabulary</p><h1>Photo vocabulary</h1><p>Choose a photo with the things you want to learn.</p></div>
         <img src={KURTES_ILLUSTRATIONS.photoVocabulary.src} alt="" className={styles.headingArt} />
       </header>
-      <a className={styles.demoLink} href="/vocabulary/from-photo?demo=kitchen">Try the kitchen demo <span>FPO DATA</span></a>
       <div className={styles.workspace}>
         <section className={styles.photoPanel} aria-label="Photo selection">
           <div className={styles.sourceControls} aria-label="Photo source">

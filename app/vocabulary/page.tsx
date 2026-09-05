@@ -52,7 +52,6 @@ export default function VocabularyPage() {
     <div className="brand-action-controls">
       <a href="/vocabulary/from-photo" className="brand-action-primary"><Upload className="size-4" />Upload photo<ArrowRight className="ml-auto size-4" /></a>
       <a href="/vocabulary/from-photo?source=camera" className="brand-action-secondary"><Camera className="size-4" />Take photo</a>
-      <a href="/vocabulary/from-photo?demo=kitchen" className="brand-action-demo">Try kitchen demo <span>FPO DATA</span></a>
     </div>
   </section><DemoVocabularyLists /></main>;
 }
