@@ -48,6 +48,8 @@ The opening screen omits the “Spanish practice” label. Join and Sign in have
 
 Authentication entry links use full document navigation (`<a href="/sign-in">` and `<a href="/join">`), following the existing vocabulary navigation fix for vinext. Sign in and Join use the existing Supabase email-and-password flow and start every authenticated learner on `/vocabulary`. Preserve refreshed session cookies through server redirects; do not add an alternate authentication provider or bypass.
 
+The Sign in screen uses the coral-to-marigold brand treatment rather than a dark-green panel. Show one KurtES wordmark in its illustrated left pane on desktop; do not repeat it over the form. Omit promotional taglines from both panes.
+
 Profile avatars use a visible 2px colored ring, including image and initials fallbacks. Use the shared `--brand-avatar-border` token (brand gold) and `.profile-avatar-button` styling across headers. Retain a separate, offset keyboard-focus outline so the decorative border is not mistaken for focus.
 
 ## Creation actions
