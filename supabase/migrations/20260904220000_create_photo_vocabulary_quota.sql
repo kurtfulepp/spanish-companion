@@ -52,5 +52,5 @@ begin
 end;
 $$;
 
-revoke all on function public.consume_photo_vocabulary_quota() from public;
+revoke all on function public.consume_photo_vocabulary_quota() from public, anon;
 grant execute on function public.consume_photo_vocabulary_quota() to authenticated;

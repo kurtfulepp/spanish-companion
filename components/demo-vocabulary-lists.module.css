@@ -15,7 +15,7 @@
 .titleButton:hover { text-decoration:underline; text-underline-offset:4px; }
 .tile > p { color:var(--brand-ink-muted); font-size:13px; line-height:1.6; margin-top:8px; }
 .tile .sample { overflow-wrap:anywhere; margin:12px 0 20px; }
-.bottom { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:auto; }
+.bottom { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:16px; }
 .empty { padding:26px; border:1px dashed var(--brand-border); border-radius:20px; font-size:14px; color:var(--brand-ink-muted); }
 .message { display:block; padding:12px 16px; margin-bottom:18px; border-radius:12px; background:var(--brand-cream); font-size:14px; }
 .archive { margin-top:24px; border-top:1px solid var(--brand-border); padding-top:20px; }

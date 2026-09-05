@@ -42,3 +42,11 @@ test('invalid drafts, broken storage, and storage failure never report a success
   assert.equal(local.getItem(demoListsKey('user')), 'broken');
   assert.throws(() => writeDemoList({ getItem: () => null, setItem: () => { throw new Error('Quota exceeded'); } }, 'user', list()));
 });
+
+test('real lists carry photo provenance and legacy lists retain demo status', () => {
+  const local = storage();
+  writeDemoList(local, 'user', { ...list('real'), source: 'photo' });
+  writeDemoList(local, 'user', list('demo'));
+  assert.equal(readDemoLists(local,'user').find(x=>x.id==='real').source,'photo');
+  assert.equal(readDemoLists(local,'user').find(x=>x.id==='demo').source,'demo');
+});

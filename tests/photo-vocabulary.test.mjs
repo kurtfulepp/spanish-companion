@@ -164,3 +164,10 @@ test('network and timeout errors are sanitized', async () => {
     assert.doesNotMatch(await response.text(), /private details/);
   }
 });
+
+test('already cancelled requests never consume quota or reach OpenAI', async () => {
+  const controller = new AbortController(); controller.abort();
+  const cancelled = new Request('https://kurtes.example/api/vocabulary/analyze-photo', { method: 'POST', body: photo, headers: {'content-type':'image/png'}, signal: controller.signal });
+  const response = await analyzePhotoRequest(cancelled, dependencies({ consumeQuota: mustNotCall, fetcher: mustNotCall }));
+  assert.equal(response.status, 499);
+});

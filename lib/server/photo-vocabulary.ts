@@ -168,6 +168,7 @@ export async function analyzePhotoRequest(request: Request, deps: Dependencies):
     if (mime !== 'image/jpeg' && mime !== 'image/png') {
       throw new PhotoError(415, 'unsupported_photo_type', 'Use a JPEG or PNG photo.');
     }
+    if (request.signal.aborted) throw new PhotoError(499, 'analysis_cancelled', 'Photo analysis cancelled.');
     const bytes = await readPhoto(request);
     validateImageSignature(bytes, mime);
     // The database counter is atomic across Workers. Fail closed if it is unavailable.
@@ -179,6 +180,7 @@ export async function analyzePhotoRequest(request: Request, deps: Dependencies):
     }
     if (!allowed) throw new PhotoError(429, 'photo_limit_reached', 'Photo limit reached. Try again later.');
 
+    if (request.signal.aborted) throw new PhotoError(499, 'analysis_cancelled', 'Photo analysis cancelled.');
     let upstream: Response;
     try {
       upstream = await (deps.fetcher ?? fetch)('https://api.openai.com/v1/responses', {
@@ -206,7 +208,8 @@ export async function analyzePhotoRequest(request: Request, deps: Dependencies):
       // Never return/log provider error bodies; they may contain image data or credentials.
       await upstream.body?.cancel();
       const status = upstream.status === 429 ? 429 : upstream.status === 400 ? 422 : 502;
-      throw new PhotoError(status, 'vision_request_failed', status === 422
+      throw new PhotoError(status, status === 429 ? 'vision_limit_reached' : 'vision_request_failed', status === 429
+        ? 'Photo recognition has reached its usage or spending limit. Please try again later.' : status === 422
         ? 'This photo could not be analyzed. Choose another photo.'
         : 'Photo analysis is unavailable. Try again later.');
     }

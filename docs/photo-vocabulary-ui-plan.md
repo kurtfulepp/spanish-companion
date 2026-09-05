@@ -69,7 +69,7 @@ Existing `user_vocabulary_progress.item_id` references the published vocabulary 
 4. **Private lists and practice:** implement the ownership schema, transactional/idempotent save, saved list UI, practice adapter and progress. Test cross-user isolation, duplicate-save prevention, and saving retries without reanalysis.
 5. **Device validation and release:** real iPhone/iPad Safari, Android Chrome, macOS Safari/Chrome, and Windows Edge/Chrome; allow, deny, previously blocked, no device, occupied camera, background/return, portrait rotation, native picker cancel, and unsupported formats. Also verify keyboard use, screen-reader status messages, 200% zoom, reduced motion, and phone-sized layouts. Browser emulation alone does not verify OS permission prompts. Record device/browser versions and any untested combinations honestly.
 
-The local OpenAI key and a real model request have already been verified. The hosted OpenAI secret, hosted quota migration, and signed-in end-to-end analysis have not. Complete these before exposing analysis as available to live users. Publish only within the user's authorized scope. Before publishing, follow AGENTS.md: remind the user about Supabase Pro or above and a 168-hour time-boxed session; verify that setting, and keep access-token expiry at 3600 seconds. No subscription purchase is authorized by this plan.
+The local OpenAI key, signed-in upload/analysis/review flow, and hosted quota RPC are now verified (see the integration checkpoint in `photo-vocabulary-api.md`). The database permission correction was approved, applied, and verified on 2026-09-05: anonymous execution is blocked and authenticated execution remains allowed. The hosted OpenAI secret and public deployment remain pending. Complete these before exposing analysis as available to live users. Publish only within the user's authorized scope. Before publishing, follow AGENTS.md: remind the user about Supabase Pro or above and a 168-hour time-boxed session; verify that setting, and keep access-token expiry at 3600 seconds. No subscription purchase is authorized by this plan.
 
 ## Sources
 
@@ -102,3 +102,18 @@ The kitchen demo now uses Review → Preview list → Save list → Name My List
 There is no fixed maximum number of list tiles or words; normal browser storage capacity applies and errors are surfaced. Active list tiles can be opened, completed into an archive, restored, or deleted with a list-specific confirmation. Completed lists remain available under Completed. Keep FPO labels until fixture data is replaced; replace browser persistence with ownership-enforced server storage before production use.
 
 Validation: repository tests cover text-only serialization, user-key separation, retry deduplication, growing collections, archive/restore/delete, malformed data, and storage failure.
+
+## Real recognition connected — 2026-09-04
+
+The ordinary upload/camera route now sends its prepared image only when Find words is selected. It uses one authenticated request, an indeterminate loading state, disabled duplicate actions, cancellation, and recoverable empty-result, network, quota, and provider-limit messages. Replacing/removing the photo or leaving the route invalidates stale work. Cancellation cannot undo provider processing already started.
+
+Successful API results enter the established editable review → preview → Name My List → Vocabulary tile flow. Real results and real saved tiles have no FPO label; the separately linked kitchen simulation retains it. Both kinds of accepted lists still use disclosed user-scoped browser storage. No photo is saved. The current implementation clears the reference photo on entering list preview and releases it on exit. Cross-device private lists, practice/progress integration, and the physical-device matrix remain subsequent stages.
+
+## Profile-owned lists implemented — 2026-09-05
+
+Account storage now replaces browser-only saves for both real and FPO lists. The existing tiles and naming flow are unchanged; copy explains that accepted lists belong to the profile and are available across devices. Existing user-scoped browser lists migrate idempotently, with local data retained on failure. Completion, restore, and deletion update the account. Lists refresh on navigation or tab refocus. Database RLS prevents cross-user access, and deletion removes words while retaining an ID tombstone to prevent reimport from old browser copies. See `photo-vocabulary-api.md` for schema and verification details. Practice/progress integration and hosted frontend release remain subsequent work.
+
+
+## Practice connected — 2026-09-05
+
+The four requested connection steps are implemented: list practice entry, profile-owned per-word status, automatic completion with manual archive/restore, and an integrated photo-to-practice journey. The real desktop browser journey and fresh-tab profile retrieval passed. See `custom-vocabulary-qa.md` for exact behavior, security results, and the physical-device/dependency-audit limitations. Public frontend release remains separate.
