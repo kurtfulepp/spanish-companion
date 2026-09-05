@@ -1,25 +1,37 @@
 'use client';
 /* oxlint-disable next/no-html-link-for-pages */
 
-import { useEffect, useState } from 'react';
-import { Menu, X } from 'lucide-react';
+import { useEffect } from 'react';
 import { Brand } from '@/components/brand';
 import { ProfileDialog, type LearnerProfile } from '@/components/profile-dialog';
+import { learningPath, rememberLearningPath, type LearningArea } from '@/lib/learning-navigation';
 import { createClient } from '@/lib/supabase/client';
 
-export function VocabularyHeader({ onProfileChange }: { onProfileChange: (profile: LearnerProfile) => void }) {
-  const [menuOpen, setMenuOpen] = useState(false);
+const sections: { id: LearningArea; label: string }[] = [
+  { id: 'vocabulary', label: 'Vocabulary' },
+  { id: 'grammar', label: 'Grammar' },
+  { id: 'conversation', label: 'Conversation' },
+];
+
+const ignoreProfileChange = () => undefined;
+
+export function LearningHeader({ active, onProfileChange = ignoreProfileChange }: { active: LearningArea; onProfileChange?: (profile: LearnerProfile) => void }) {
 
   useEffect(() => {
+    rememberLearningPath(active);
     void createClient().auth.getUser().then(({ data }) => {
       if (!data.user) window.location.replace('/sign-in');
     });
-  }, []);
+  }, [active]);
 
   async function signOut() {
     await createClient().auth.signOut();
     window.location.replace('/');
   }
 
-  return <><header className="app-header"><a href="/today" aria-label="KurtES home"><Brand compact /></a><nav className="hidden items-center gap-1 md:flex" aria-label="Main navigation"><a className="nav-link" href="/today">Today</a><a className="nav-link nav-link-active" href="/vocabulary">Vocabulary</a><a className="nav-link" href="/today#progress">Practice</a></nav><div className="hidden items-center gap-2 sm:flex"><button onClick={() => void signOut()} className="rounded-full px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-secondary hover:text-foreground">Sign out</button><ProfileDialog onProfileChange={onProfileChange} fallbackAvatarSrc="/brand/kurtes-center.png" /></div><button className="icon-button sm:hidden" aria-label="Open menu" onClick={() => setMenuOpen(true)}><Menu className="size-5" /></button></header>{menuOpen && <div className="fixed inset-0 z-50 bg-[#173c34] p-6 text-white sm:hidden"><div className="flex items-center justify-between"><Brand compact /><button onClick={() => setMenuOpen(false)} aria-label="Close menu"><X /></button></div><nav className="mt-16 grid gap-6 text-3xl font-semibold"><a href="/today">Today</a><a href="/vocabulary">Vocabulary</a><a href="/today#progress">Practice</a><ProfileDialog onProfileChange={onProfileChange} mobile /><button onClick={() => void signOut()} className="text-left text-[#f4bd4e]">Sign out</button></nav></div>}</>;
+  return <header className="app-header h-auto min-h-16 flex-wrap gap-2 py-2"><a href={learningPath(active)} aria-label={`KurtES ${active}`}><Brand compact /></a><nav className="hidden items-center gap-1 md:flex" aria-label="Learning areas">{sections.map((section) => <a key={section.id} className={`nav-link ${section.id === active ? 'nav-link-active' : ''}`} href={learningPath(section.id)} aria-current={section.id === active ? 'page' : undefined}>{section.label}</a>)}</nav><div className="flex items-center gap-1 sm:gap-2"><button onClick={() => void signOut()} className="rounded-full px-2.5 py-2 text-sm font-semibold text-[var(--brand-ink)] transition hover:bg-[var(--brand-cream)] sm:px-3">Sign out</button><ProfileDialog onProfileChange={onProfileChange} fallbackAvatarSrc="/brand/kurtes-center.png" /></div><nav className="order-3 flex w-full items-center justify-center gap-1 border-t border-border/60 pt-2 md:hidden" aria-label="Learning areas">{sections.map((section) => <a key={section.id} className={`nav-link px-3 ${section.id === active ? 'nav-link-active' : ''}`} href={learningPath(section.id)} aria-current={section.id === active ? 'page' : undefined}>{section.label}</a>)}</nav></header>;
+}
+
+export function VocabularyHeader({ onProfileChange }: { onProfileChange: (profile: LearnerProfile) => void }) {
+  return <LearningHeader active="vocabulary" onProfileChange={onProfileChange} />;
 }
