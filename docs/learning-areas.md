@@ -12,7 +12,7 @@ The former Today destination is no longer a primary product area. `/today` remai
 
 ## Returning learners
 
-The most recently visited learning area is remembered on the current device. A normal sign-in returns the learner to that area, with Vocabulary as the fallback. Progress and preferences live inside Profile instead of occupying a separate navigation destination.
+The most recently visited learning area is remembered on the current device for future personalization. Every successful sign-in, immediate sign-up, and confirmed-email callback starts on Vocabulary. Progress and preferences live inside Profile instead of occupying a separate navigation destination.
 
 ## Product rule
 

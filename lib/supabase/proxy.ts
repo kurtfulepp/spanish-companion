@@ -61,7 +61,7 @@ export async function updateSession(request: NextRequest) {
   // Join always opens account creation; Sign in may reuse a valid session.
   if (isAuthenticated && isSignIn) {
     const url = request.nextUrl.clone();
-    url.pathname = '/today';
+    url.pathname = '/vocabulary';
     return redirectWithSession(url);
   }
 

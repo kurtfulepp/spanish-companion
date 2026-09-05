@@ -6,7 +6,6 @@ import { Brand } from '@/components/brand';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { getLastLearningPath } from '@/lib/learning-navigation';
 import { createClient } from '@/lib/supabase/client';
 
 export default function SignInPage() {
@@ -18,7 +17,7 @@ export default function SignInPage() {
   useEffect(() => {
     const supabase = createClient();
     void supabase.auth.getUser().then(({ data }) => {
-      if (data.user) window.location.replace(getLastLearningPath());
+      if (data.user) window.location.replace('/vocabulary');
     }).catch(() => setMessage('Could not check your session. Sign in to try again.'));
   }, []);
 
@@ -30,7 +29,7 @@ export default function SignInPage() {
     try {
       const { error } = await createClient().auth.signInWithPassword({ email, password });
       if (error) setMessage('Email or password was not recognized.');
-      else window.location.replace(getLastLearningPath());
+      else window.location.replace('/vocabulary');
     } catch {
       setMessage('Could not connect. Check your connection and try again.');
     } finally {

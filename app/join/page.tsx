@@ -5,7 +5,6 @@ import { useRef, useState, type SubmitEvent } from 'react';
 import { ArrowLeft, ArrowRight, Check, Eye, EyeOff, Mail } from 'lucide-react';
 import { Brand } from '@/components/brand';
 import { createClient } from '@/lib/supabase/client';
-import { getLastLearningPath } from '@/lib/learning-navigation';
 
 const steps = ['Email', 'Password', 'Review'];
 
@@ -55,7 +54,7 @@ export default function JoinPage() {
         else if (error.code === 'over_email_send_rate_limit' || error.status === 429) setMessage('Too many attempts. Wait a few minutes before trying again.');
         else setMessage('Your account could not be created. Try again, or sign in if you already have an account.');
       } else if (data.session) {
-        window.location.replace(getLastLearningPath());
+        window.location.replace('/vocabulary');
       } else {
         setSubmitted(true);
         setPassword('');

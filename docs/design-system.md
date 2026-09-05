@@ -45,7 +45,7 @@ Use white for large type over the coral hero. The compact red ES mark uses its o
 
 The opening screen omits the “Spanish practice” label. Join and Sign in have equal width and height; omit the Join arrow and distinguish hierarchy through surface treatment, not size. Its authentication actions are Join (account creation) and Sign in (existing account), not “Start practice”. The title screen has no duplicate header Sign in link.
 
-Authentication entry links use full document navigation (`<a href="/sign-in">` and `<a href="/join">`), following the existing vocabulary navigation fix for vinext. Sign in uses the existing Supabase email-and-password flow and returns to `/today` after authentication. Preserve refreshed session cookies through server redirects; do not add an alternate authentication provider or bypass.
+Authentication entry links use full document navigation (`<a href="/sign-in">` and `<a href="/join">`), following the existing vocabulary navigation fix for vinext. Sign in and Join use the existing Supabase email-and-password flow and start every authenticated learner on `/vocabulary`. Preserve refreshed session cookies through server redirects; do not add an alternate authentication provider or bypass.
 
 Profile avatars use a visible 2px colored ring, including image and initials fallbacks. Use the shared `--brand-avatar-border` token (brand gold) and `.profile-avatar-button` styling across headers. Retain a separate, offset keyboard-focus outline so the decorative border is not mistaken for focus.
 

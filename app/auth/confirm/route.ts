@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   const tokenHash = request.nextUrl.searchParams.get('token_hash');
   const type = request.nextUrl.searchParams.get('type') as EmailOtpType | null;
   const destination = request.nextUrl.clone();
-  destination.pathname = '/today';
+  destination.pathname = '/vocabulary';
   destination.search = '';
 
   const supabase = await createClient();
