@@ -27,6 +27,7 @@ Runtime paths and accessible descriptions are registered in `lib/illustrations.t
 
 | Key | File | Intended use |
 | --- | --- | --- |
+| `photoVocabulary` | `topics/photo-vocabulary.png` | Photo creation action panel; opaque cream backdrop, 1254 × 1254 source |
 | `topicCompass` | `topics/topic-compass.png` | Vocabulary map and topic discovery |
 | `diningOut` | `topics/dining-out.png` | Dining Out |
 | `aroundTheCity` | `topics/around-the-city.png` | Around the City |
@@ -88,3 +89,11 @@ The first library set used the reusable brief above with these subjects:
 - Home & Daily Life: coral doorway, turquoise door, plants, woven mat, and keys.
 - Feelings & Relationships: interlocking coral and turquoise hearts supported by abstract hands.
 
+
+## Photo creation action artwork
+
+The Photo vocabulary action has an intentional warm cream backdrop within a rounded inset, distinguishing it from the transparent topic illustrations. The original built-in ImageGen output is retained at 1254 × 1254 to avoid another conversion step. The same registered artwork is used on the photo-selection screen.
+
+Final edit prompt, built-in ImageGen (2026-09-04):
+
+> Edit this artwork for a KurtES photo vocabulary action panel. Preserve the tactile 3D coral camera, turquoise lens, cream floral trim, apple and photo print exactly. Replace ALL the gray-white checkerboard with a smooth solid warm cream background #fff4dc, including through the wrist strap openings. This is an intentionally opaque illustration, NOT a transparency request. No checkerboard anywhere. Keep whole subject visible with generous padding. Square image, no text, no logos. Soft natural contact shadow only, no added objects.

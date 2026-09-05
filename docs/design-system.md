@@ -34,6 +34,7 @@ Use white for large type over the coral hero. The compact red ES mark uses its o
 - Use tightly tracked, semibold or bold display headings, following vocabulary's approximately `-.055em` tracking. Body text remains normally tracked and readable.
 - Use a 1360px content maximum, 12px mobile / 20px larger page gutters, and the existing 20px header-to-content gap.
 - Learning and Join screens reuse `.app-header`: light surface, 64px height, 22px rounded corners, subtle border and warm shadow. The title screen uses one `.brand-hero` pane with a continuous orange gradient and no header. Show the large KurtES title and the Join / Sign in pair once; do not duplicate the wordmark or Sign in in the top corners.
+- Keep the shared navigation header in normal document flow so it scrolls away with the page. Do not make it sticky or fixed; it must not cover the working content.
 - Use a gold pill with terracotta text for the active navigation destination. Authenticated headers keep Profile/Settings and Sign out visible at the right; do not replace those account controls with a generic hamburger.
 - Sign out returns to the public opening screen, where Sign in occupies the same conventional upper-right position.
 - The upper-left brand is the KurtES wordmark only. A learner's personal avatar appears once, at the upper right, and opens Profile and Settings when selected.
@@ -49,6 +50,12 @@ Authentication entry links use full document navigation (`<a href="/sign-in">` a
 
 Profile avatars use a visible 2px colored ring, including image and initials fallbacks. Use the shared `--brand-avatar-border` token (brand gold) and `.profile-avatar-button` styling across headers. Retain a separate, offset keyboard-focus outline so the decorative border is not mistaken for focus.
 
+## Creation actions
+
+The photo creation panel headline is “CREATE YOUR OWN”, followed by “Upload a photo to create a custom theme to enhance your vocabulary.” Omit the former eyebrow and “Photo vocabulary” heading in this panel. Retain the existing action buttons.
+
+Photo vocabulary appears after all topic cards as a separate, full-width action panel. Use the shared `.brand-action-*` styles: light surface, gold top border, warm cream artwork inset, larger title, and prominent upload/camera controls. On mobile, keep both actions below the artwork and copy. It is a creation tool, so do not place it among the topic cards or repeat their status-chip layout. The photo action artwork may use an intentional cream backdrop inside its rounded inset; topic illustrations retain transparency.
+
 ## Artwork
 
 Follow [`illustration-library.md`](illustration-library.md) and [`learner-avatar-reference.md`](learner-avatar-reference.md). These retain the detailed generation and identity rules.
@@ -60,6 +67,8 @@ Reuse the transparent, tactile 3D assets. Kurt is the guide; objects identify vo
 The user's explicit choice is **direct and understated**. Describe what the learner can do in plain language. Prefer “Join”, “Sign in”, “Spanish practice”, “Reveal Spanish”, and similarly concrete labels.
 
 No motivational filler, sentimental promises, or decorative taglines in navigation, footers, or below actions. Do not replace a removed slogan with another. Specifically rejected: “A little Spanish, every day”, “Small steps. Real confidence”, “Vamos, a tu ritmo”, and the courage / new-world-of-conversation copy. Empty space is intentional.
+
+The Vocabulary Worlds hero heading is “Select a theme or create your own”, with no supporting subtext.
 
 Keep the Vocabulary overview similarly concise: omit the “More worlds…” tagline, the redundant “Vocabulary themes” eyebrow, and the “Your topic map” caption beneath the compass artwork.
 
@@ -78,3 +87,7 @@ Use a full-screen, sequential Email → Password → Review flow with bottom pro
 ## Welcome character
 
 Use the original, unmodified still coach image with “¡Hola!” visible immediately. The user rejected both the whole-body wobble and the masked-arm wave. Do not reintroduce character animation unless explicitly requested again.
+
+## Photo vocabulary prototype
+
+The kitchen simulation uses a persistent **FPO DATA** banner on photo, finding, review, and list-preview states. Keep this label while any vocabulary is fixture data; remove it only after successful real API integration. Review uses editable English/Spanish rows with selection checkboxes, then a list preview. The final “Save list” opens a “Name My List” overlay with a freeform name and Save button. For the FPO prototype, accepted text persists in browser storage scoped to the signed-in user; show this limitation explicitly. Never persist photos. Saved list tiles appear below Create Your Own, with no fixed tile-count limit. Each tile has subtle top-right complete and trash icons. Completion moves the list into a collapsible Completed archive with a restore action; deletion confirms the specific list. Name lists only in the final overlay. On narrow screens, stack the language fields and allow collapsing the reference photo.

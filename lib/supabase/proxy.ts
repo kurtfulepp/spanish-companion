@@ -2,12 +2,12 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { requireSupabaseConfig } from '@/lib/supabase/config';
 
-function addSecurityHeaders(response: NextResponse) {
+function addSecurityHeaders(response: NextResponse, allowCamera = false) {
   response.headers.set(
     'Content-Security-Policy',
     "default-src 'self'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; object-src 'none'; img-src 'self' data: blob: https://*.supabase.co; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co; media-src 'self' blob:; upgrade-insecure-requests",
   );
-  response.headers.set('Permissions-Policy', 'camera=(), geolocation=(), microphone=()');
+  response.headers.set('Permissions-Policy', `camera=${allowCamera ? '(self)' : '()'}, geolocation=(), microphone=()`);
   response.headers.set('Cross-Origin-Opener-Policy', 'same-origin');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
@@ -65,5 +65,5 @@ export async function updateSession(request: NextRequest) {
     return redirectWithSession(url);
   }
 
-  return addSecurityHeaders(response);
+  return addSecurityHeaders(response, isAuthenticated && request.nextUrl.pathname === '/vocabulary/from-photo');
 }

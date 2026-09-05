@@ -5,6 +5,11 @@ export type KurtESIllustration = {
 };
 
 export const KURTES_ILLUSTRATIONS = {
+  photoVocabulary: {
+    src: '/illustrations/topics/photo-vocabulary.png',
+    alt: 'A coral camera with a photo print and an apple',
+    family: 'topic',
+  },
   topicCompass: {
     src: '/illustrations/topics/topic-compass.png',
     alt: 'A colorful KurtES compass',
