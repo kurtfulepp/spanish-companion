@@ -52,6 +52,6 @@ No blocking issue was found in the reviewed application code and tested database
 
 ## Limits and remaining validation
 
-- The live npm dependency advisory scan was blocked by automatic approval review because sending package metadata to npm requires separate approval. Dependency vulnerability status is therefore unverified; no package versions were changed.
+- Following explicit user approval on 2026-09-05, the live `npm audit --json` scan completed successfully (exit 0). npm reported zero known vulnerabilities across all severity levels in the installed dependency tree, including development dependencies. This resolves the earlier approval block. No package versions were changed. An advisory scan is point-in-time coverage of known vulnerabilities, not a guarantee that dependencies contain no security defects.
 - Native camera prompts, real iOS/Android/Windows devices, physical cross-device testing, screen-reader testing, browser zoom/mobile emulation, and offline browser fault injection were not exercised here. Error behavior was checked in automated tests and source review, not by claiming simulated network tests ran in the browser.
 - Public hosting configuration, production request-body/session-replay logging review, and deployment remain separate. Follow the existing Supabase plan/session requirements before publishing.
