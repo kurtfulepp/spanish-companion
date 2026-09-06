@@ -1,3 +1,5 @@
+import { CEFR_GUIDANCE, isCEFRLevel, type CEFRLevel } from '@/lib/cefr';
+
 // Server-only integration: never import this module from a client component.
 export const MAX_PHOTO_BYTES = 2 * 1024 * 1024;
 export const DEFAULT_VISION_MODEL = 'gpt-4.1-mini-2025-04-14';
@@ -5,17 +7,21 @@ export const DEFAULT_VISION_MODEL = 'gpt-4.1-mini-2025-04-14';
 export type PhotoVocabulary = {
   suggested_title: string;
   items: { english: string; spanish: string; usage_note: string | null }[];
+  cefr_level?: CEFRLevel;
 };
 
 type Dependencies = {
   apiKey?: string;
   model?: string;
   authenticate: () => Promise<boolean>;
+  getLearnerLevel: () => Promise<CEFRLevel | null>;
   consumeQuota: () => Promise<boolean>;
   fetcher?: typeof fetch;
 };
 
-const instructions = `Identify vocabulary for a Spanish learner from this photo.
+function instructionsForLevel(level: CEFRLevel) {
+  return `Identify vocabulary for a ${level} CEFR Spanish learner from this photo.
+Level guidance: ${CEFR_GUIDANCE[level].photoVocabulary}
 Return at most 15 distinct, clearly visible objects, ordered by prominence and usefulness.
 Use fewer items when appropriate; return an empty items array if nothing is clear.
 Do not invent objects, hidden ingredients, exact species, or personal information.
@@ -26,6 +32,7 @@ Include the Spanish definite article (el/la/los/las) with nouns as appropriate.
 Use a short usage_note only for a helpful regional alternative or ambiguity; otherwise null.
 Suggest a short English list title describing the scene without personal information.
 These are suggestions for human review; do not claim the user has accepted them.`;
+}
 
 const schema = {
   type: 'object',
@@ -161,6 +168,10 @@ export async function analyzePhotoRequest(request: Request, deps: Dependencies):
     if (!(await deps.authenticate())) {
       throw new PhotoError(401, 'authentication_required', 'Sign in to analyze a photo.');
     }
+    const level = await deps.getLearnerLevel();
+    if (!isCEFRLevel(level)) {
+      throw new PhotoError(409, 'profile_level_required', 'Set your Spanish level before analyzing a photo.');
+    }
     if (!deps.apiKey?.trim()) {
       throw new PhotoError(503, 'vision_not_configured', 'Photo vocabulary is not configured yet.');
     }
@@ -192,9 +203,9 @@ export async function analyzePhotoRequest(request: Request, deps: Dependencies):
           store: false,
           background: false,
           max_output_tokens: 2000,
-          instructions,
+          instructions: instructionsForLevel(level),
           input: [{ role: 'user', content: [
-            { type: 'input_text', text: 'Suggest vocabulary for the visible objects in this photo.' },
+            { type: 'input_text', text: `Suggest vocabulary for the visible objects at CEFR level ${level}.` },
             { type: 'input_image', image_url: `data:${mime};base64,${base64(bytes)}`, detail: 'auto' },
           ] }],
           text: { format: { type: 'json_schema', name: 'photo_vocabulary', strict: true, schema } },
@@ -213,7 +224,7 @@ export async function analyzePhotoRequest(request: Request, deps: Dependencies):
         ? 'This photo could not be analyzed. Choose another photo.'
         : 'Photo analysis is unavailable. Try again later.');
     }
-    return json({ ...parseVocabulary(await upstream.json()), requires_review: true });
+    return json({ ...parseVocabulary(await upstream.json()), cefr_level: level, requires_review: true });
   } catch (error) {
     if (error instanceof PhotoError) return json({ error: error.message, code: error.code }, error.status);
     // Do not log caught exceptions, request bodies, images, or generated suggestions.

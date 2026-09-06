@@ -29,6 +29,7 @@ function dependencies(overrides = {}) {
   return {
     apiKey: 'test-secret',
     authenticate: async () => true,
+    getLearnerLevel: async () => 'B1',
     consumeQuota: async () => true,
     fetcher: async () => Response.json(completed()),
     ...overrides,
@@ -39,6 +40,7 @@ const mustNotCall = async () => { assert.fail('Unexpected downstream call'); };
 test('sign-in, configuration, and cross-site checks block analysis before reading an image', async () => {
   for (const [deps, headers, expected] of [
     [dependencies({ authenticate: async () => false, consumeQuota: mustNotCall, fetcher: mustNotCall }), {}, 401],
+    [dependencies({ getLearnerLevel: async () => null, consumeQuota: mustNotCall, fetcher: mustNotCall }), {}, 409],
     [dependencies({ apiKey: '', consumeQuota: mustNotCall, fetcher: mustNotCall }), {}, 503],
     [dependencies({ authenticate: mustNotCall, consumeQuota: mustNotCall, fetcher: mustNotCall }), { 'sec-fetch-site': 'cross-site' }, 403],
   ]) {
@@ -94,6 +96,8 @@ test('uses inline input and a non-stored foreground response; returns only revie
       assert.equal(body.background, false);
       assert.equal(body.text.format.strict, true);
       assert.equal(body.text.format.schema.properties.items.maxItems, 15);
+      assert.match(body.instructions, /B1 CEFR Spanish learner/);
+      assert.match(body.input[0].content[0].text, /CEFR level B1/);
       assert.equal(body.input[0].content[1].image_url, `data:image/png;base64,${photo.toString('base64')}`);
       assert.equal(body.tools, undefined);
       assert.equal(body.conversation, undefined);
@@ -105,7 +109,7 @@ test('uses inline input and a non-stored foreground response; returns only revie
   assert.equal(callCount, 1);
   assert.equal(response.status, 200);
   assert.equal(response.headers.get('cache-control'), 'no-store');
-  assert.deepEqual(await response.json(), { ...vocabulary, requires_review: true });
+  assert.deepEqual(await response.json(), { ...vocabulary, cefr_level: 'B1', requires_review: true });
 });
 
 test('empty scenes are valid and repeated English entries are collapsed', async () => {

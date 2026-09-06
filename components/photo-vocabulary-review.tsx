@@ -1,7 +1,7 @@
 'use client';
 /* oxlint-disable next/no-html-link-for-pages, next/no-img-element */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, ChevronDown, ImagePlus, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { VocabularyHeader } from '@/components/vocabulary-header';
 import type { PhotoAnalysis } from '@/lib/photo-analysis';
@@ -15,8 +15,10 @@ import styles from './photo-vocabulary-review.module.css';
 
 type Step = 'review' | 'saved';
 
-type Props = { result: PhotoAnalysis; photoUrl?: string | null; onChoosePhoto?: () => void; onReleasePhoto?: () => void };
-export function PhotoVocabularyReview({ result, photoUrl, onChoosePhoto, onReleasePhoto }: Props) {
+import type { LearnerProfile } from '@/lib/learner-profile';
+
+type Props = { result: PhotoAnalysis; photoUrl?: string | null; onChoosePhoto?: () => void; onReleasePhoto?: () => void; onProfileChange?: (profile: LearnerProfile) => void };
+export function PhotoVocabularyReview({ result, photoUrl, onChoosePhoto, onReleasePhoto, onProfileChange = () => {} }: Props) {
   const [step, setStep] = useState<Step>('review');
   const [photo, setPhoto] = useState<string | null>(photoUrl ?? null);
   const [words, setWords] = useState<ReviewWord[]>(() => result.items.map((item, i) => ({ id: `photo-${i}`, english: item.english, spanish: item.spanish, note: item.usage_note ?? '', selected: true })));
@@ -28,7 +30,6 @@ export function PhotoVocabularyReview({ result, photoUrl, onChoosePhoto, onRelea
   const savedId = useRef<string | null>(null);
   const [photoOpen, setPhotoOpen] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
-  const onProfileChange = useCallback(() => {}, []);
   const selected = words.filter((word) => word.selected);
   const errors = wordErrors(words);
   const valid = selected.length > 0 && Object.keys(errors).length === 0;
@@ -54,6 +55,7 @@ export function PhotoVocabularyReview({ result, photoUrl, onChoosePhoto, onRelea
       savedId.current ??= crypto.randomUUID();
       await saveCustomList(client, data.user.id, {
         id: savedId.current, name: title.trim(), source: 'photo', completed: false, createdAt: new Date().toISOString(),
+        cefrLevel: result.cefr_level,
         words: selected.map(({ english, spanish }) => ({ english, spanish })),
       });
       window.location.assign('/vocabulary#your-lists');
@@ -68,7 +70,7 @@ export function PhotoVocabularyReview({ result, photoUrl, onChoosePhoto, onRelea
     <div className={base.content}>
       <a className={base.back} href="/vocabulary"><ArrowLeft size={17} />Vocabulary</a>
       <header className={styles.header}>
-        <div><p className={base.eyebrow}>Photo vocabulary</p><h1 ref={heading} tabIndex={-1}>{step === 'review' ? 'Choose the words to keep' : 'Your list preview'}</h1><p>{step === 'review' ? 'Check the translations. Edit any word and leave out what you don’t need.' : 'This is how your accepted words will appear in a custom list.'}</p></div>
+        <div><p className={base.eyebrow}>{result.cefr_level} photo vocabulary</p><h1 ref={heading} tabIndex={-1}>{step === 'review' ? 'Choose the words to keep' : 'Your list preview'}</h1><p>{step === 'review' ? 'Check the translations. Edit any word and leave out what you don’t need.' : 'This is how your accepted words will appear in a custom list.'}</p></div>
         <ol className={styles.steps} aria-label="Photo vocabulary steps">{['Photo', 'Review', 'List'].map((label, index) => {
           const current = step === 'saved' ? 2 : step === 'review' ? 1 : 0;
           return <li key={label} aria-current={current === index ? 'step' : undefined} data-complete={current > index}><span>{current > index ? <Check size={14} /> : index + 1}</span>{label}</li>;

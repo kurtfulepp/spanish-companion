@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { build } from 'esbuild';
 const { outputFiles } = await build({ entryPoints: ['lib/custom-vocabulary-lists.ts'], bundle: true, write: false, format: 'esm', platform: 'browser' });
 const { listRecord, saveCustomList, loadCustomLists, changeCustomList, importBrowserLists } = await import(`data:text/javascript;base64,${Buffer.from(outputFiles[0].text).toString('base64')}`);
-const fixture = { id: 'f0000000-0000-4000-8000-000000000001', name: ' Kitchen ', createdAt: '2026-09-05T00:00:00Z', source: 'photo', completed: false, words: [{ english: ' mug ', spanish: ' la taza ', photo: 'private-photo' }], photo: 'private-photo' };
+const fixture = { id: 'f0000000-0000-4000-8000-000000000001', name: ' Kitchen ', createdAt: '2026-09-05T00:00:00Z', source: 'photo', cefrLevel: 'B1', completed: false, words: [{ english: ' mug ', spanish: ' la taza ', photo: 'private-photo' }], photo: 'private-photo' };
 function local(initial) { let value = initial; return { getItem: () => value, removeItem: () => { value = null; }, value: () => value }; }
 function fake(rows = [], fail = false) {
   const calls = [];
@@ -17,6 +17,8 @@ function fake(rows = [], fail = false) {
       is(key, value) { call.filters.push([key, value]); return query; },
       order() { return query; },
       range(start, end) { call.range = [start, end]; return query; },
+      // Supabase query builders are intentionally awaitable in this test double.
+      // oxlint-disable-next-line unicorn/no-thenable
       then(resolve, reject) {
         if (call.insert && !fail && !rows.some(row => row.id === call.insert.id && row.user_id === call.insert.user_id)) rows.push(call.insert);
         return Promise.resolve({ error: fail ? { message: 'private diagnostic' } : null, data: call.range ? rows.slice(call.range[0], call.range[1] + 1) : null }).then(resolve, reject);
@@ -28,6 +30,7 @@ test('account serialization includes only accepted text, stable ID and owner', (
   const row = listRecord('owner-a', fixture);
   assert.deepEqual(row.words, [{ english: 'mug', spanish: 'la taza' }]);
   assert.equal(row.name, 'Kitchen'); assert.equal(row.user_id, 'owner-a');
+  assert.equal(row.cefr_level, 'B1');
   assert.ok(!JSON.stringify(row).includes('private-photo'));
 });
 test('import and save retries never duplicate or overwrite an account completion', async () => {

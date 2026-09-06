@@ -8,22 +8,21 @@ import { Progress } from '@/components/ui/progress';
 import { SpeechButton } from '@/components/speech-button';
 import { VocabularyHeader } from '@/components/vocabulary-header';
 import type { LearnerProfile } from '@/components/profile-dialog';
+import { useLearnerProfile } from '@/components/learner-profile-provider';
+import { LevelRequired } from '@/components/level-required';
 import { createClient } from '@/lib/supabase/client';
-import { DEFAULT_LEARNING_TIME_ZONE } from '@/lib/progress';
 import { KURTES_ILLUSTRATIONS } from '@/lib/illustrations';
+import type { CEFRLevel } from '@/lib/cefr';
 
-type VocabularyItem = { id: string; spanish: string; english: string; example_es: string; example_en: string; usage_note: string | null; sort_order: number };
+type VocabularyItem = { id: string; spanish: string; english: string; example_es: string; example_en: string; usage_note: string | null; sort_order: number; cefr_level: CEFRLevel };
 type VocabularySection = { id: string; slug: string; title: string; description: string; sort_order: number; vocabulary_items: VocabularyItem[] };
 type ItemProgress = { status: 'new' | 'learning' | 'confident'; confidence: number };
 type Mode = 'overview' | 'diagnostic' | 'diagnostic-complete' | 'explore';
 
-const emptyProfile: LearnerProfile = { displayName: '', proficiencyLevel: '', voicePreference: 'male', learningTimeZone: DEFAULT_LEARNING_TIME_ZONE, followDeviceTimeZone: false };
-
 export default function DiningOutPage() {
-  const [profile, setProfile] = useState<LearnerProfile>(emptyProfile);
+  const { profile, loading: profileLoading, userId, setProfile } = useLearnerProfile();
   const [sections, setSections] = useState<VocabularySection[]>([]);
   const [itemProgress, setItemProgress] = useState<Record<string, ItemProgress>>({});
-  const [userId, setUserId] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>('overview');
   const [selectedSection, setSelectedSection] = useState('all');
   const [diagnosticIndex, setDiagnosticIndex] = useState(0);
@@ -31,31 +30,34 @@ export default function DiningOutPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
-  const updateProfile = useCallback((next: LearnerProfile) => setProfile(next), []);
+  const updateProfile = useCallback((next: LearnerProfile) => setProfile(next), [setProfile]);
 
   useEffect(() => {
+    if (profileLoading || !profile.proficiencyLevel || !userId) return;
     const supabase = createClient();
     void (async () => {
-      const { data: auth } = await supabase.auth.getUser();
-      if (!auth.user) { window.location.replace('/sign-in'); return; }
-      setUserId(auth.user.id);
+      setLoading(true);
+      setMessage('');
+      setMode('overview');
+      setSelectedSection('all');
       const [{ data: sectionData, error: sectionError }, { data: progressData }] = await Promise.all([
-        supabase.from('vocabulary_sections').select('id, slug, title, description, sort_order, vocabulary_items(id, spanish, english, example_es, example_en, usage_note, sort_order)').eq('theme_id', 'dining-out').order('sort_order'),
-        supabase.from('user_vocabulary_progress').select('item_id, status, confidence').eq('user_id', auth.user.id),
+        supabase.from('vocabulary_sections').select('id, slug, title, description, sort_order, vocabulary_items(id, spanish, english, example_es, example_en, usage_note, sort_order, cefr_level)').eq('theme_id', 'dining-out').order('sort_order'),
+        supabase.from('user_vocabulary_progress').select('item_id, status, confidence').eq('user_id', userId),
       ]);
       if (sectionError || !sectionData?.length) setMessage('Dining Out could not be loaded right now.');
-      else setSections((sectionData as VocabularySection[]).map((section) => ({ ...section, vocabulary_items: [...section.vocabulary_items].sort((a, b) => a.sort_order - b.sort_order) })));
+      else setSections((sectionData as VocabularySection[]).map((section) => ({ ...section, vocabulary_items: section.vocabulary_items.filter((item) => item.cefr_level === profile.proficiencyLevel).sort((a, b) => a.sort_order - b.sort_order) })).filter((section) => section.vocabulary_items.length));
       setItemProgress(Object.fromEntries((progressData ?? []).map((entry) => [entry.item_id, { status: entry.status, confidence: entry.confidence }])));
       setLoading(false);
     })();
-  }, []);
+  }, [profile.proficiencyLevel, profileLoading, userId]);
 
   const allItems = useMemo(() => sections.flatMap((section) => section.vocabulary_items), [sections]);
-  const diagnosticItems = useMemo(() => allItems.filter((_, index) => index % 4 === 0).slice(0, 8), [allItems]);
+  const diagnosticItems = useMemo(() => allItems.slice(0, 8), [allItems]);
   const visibleSections = selectedSection === 'all' ? sections : sections.filter((section) => section.slug === selectedSection);
-  const started = Object.keys(itemProgress).length;
-  const confident = Object.values(itemProgress).filter((entry) => entry.status === 'confident').length;
-  const needsPractice = Object.values(itemProgress).filter((entry) => entry.status !== 'confident').length;
+  const currentProgress = allItems.map((item) => itemProgress[item.id]).filter(Boolean);
+  const started = currentProgress.length;
+  const confident = currentProgress.filter((entry) => entry.status === 'confident').length;
+  const needsPractice = currentProgress.filter((entry) => entry.status !== 'confident').length;
 
   async function saveProgress(itemId: string, status: ItemProgress['status']) {
     if (!userId) return false;
@@ -92,12 +94,14 @@ export default function DiningOutPage() {
     setMode('diagnostic');
   }
 
-  if (loading) return <main className="min-h-screen bg-background px-3 pt-3 sm:px-5"><VocabularyHeader onProfileChange={updateProfile} /><div className="mx-auto mt-5 grid min-h-[620px] max-w-[1360px] place-items-center rounded-[32px] bg-white"><div className="text-center"><span className="mx-auto block size-8 animate-spin rounded-full border-2 border-primary/20 border-t-primary" /><p className="mt-4 text-sm text-muted-foreground">Setting the table…</p></div></div></main>;
+  if (profileLoading || (profile.proficiencyLevel && loading)) return <main className="min-h-screen bg-background px-3 pt-3 sm:px-5"><VocabularyHeader onProfileChange={updateProfile} /><div className="mx-auto mt-5 grid min-h-[620px] max-w-[1360px] place-items-center rounded-[32px] bg-white"><div className="text-center"><span className="mx-auto block size-8 animate-spin rounded-full border-2 border-primary/20 border-t-primary" /><p className="mt-4 text-sm text-muted-foreground">Setting the table…</p></div></div></main>;
+
+  if (!profile.proficiencyLevel) return <main className="min-h-screen bg-background px-3 pb-12 pt-3 text-foreground sm:px-5"><VocabularyHeader onProfileChange={updateProfile} /><LevelRequired profile={profile} onProfileChange={updateProfile} /></main>;
 
   return <main className="min-h-screen bg-background px-3 pb-12 pt-3 text-foreground sm:px-5"><VocabularyHeader onProfileChange={updateProfile} />
     <div className="mx-auto mt-5 max-w-[1360px]"><a href="/vocabulary" className="inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-muted-foreground transition hover:bg-white hover:text-foreground"><ArrowLeft className="size-4" />All vocabulary themes</a></div>
     {message && !sections.length ? <div className="mx-auto mt-5 max-w-[1360px] rounded-[24px] bg-[#fff1ed] p-6 text-[#8b4337]">{message}</div> : <>
-    {mode === 'overview' && <section className="mx-auto mt-3 max-w-[1360px] overflow-hidden rounded-[32px] bg-[#fff4dc] shadow-[0_18px_55px_rgba(48,51,38,.1)]"><div className="grid min-h-[590px] gap-8 px-6 py-9 sm:px-10 sm:py-12 lg:grid-cols-[1fr_.8fr] lg:items-center lg:px-14"><div><span className="inline-flex items-center gap-2 rounded-full bg-white/75 px-3 py-1.5 text-sm font-semibold text-[#80621f]"><Sparkles className="size-4" />B1–B2 topic experience</span><h1 className="mt-6 font-heading text-[clamp(4rem,8vw,8rem)] font-semibold leading-[.84] tracking-[-.075em] text-[#173c34]">Dining<br />Out</h1><p className="mt-7 max-w-xl text-lg leading-relaxed text-[#71633f]">Move through a meal from getting a table to paying the bill. Learn the expressions that make you sound comfortable, clear, and polite.</p><div className="mt-8 flex flex-col gap-3 sm:flex-row"><Button onClick={startDiagnostic} className="h-12 rounded-full px-6 text-base font-bold"><Eye className="size-4" />Find my gaps</Button><Button variant="outline" onClick={() => setMode('explore')} className="h-12 rounded-full border-[#cfb96f] bg-white/65 px-6 text-base font-bold">Explore all 30 phrases<ArrowRight className="size-4" /></Button></div><div className="mt-8 flex flex-wrap gap-2 text-sm font-medium text-[#806f42]"><span className="rounded-full bg-white/65 px-3 py-1.5">6 real moments</span><span className="rounded-full bg-white/65 px-3 py-1.5">Audio included</span><span className="rounded-full bg-white/65 px-3 py-1.5">Progress saved</span></div></div><div className="relative mx-auto grid size-72 place-items-center rounded-full bg-white shadow-[0_28px_70px_rgba(118,85,20,.16)] sm:size-96"><img src={KURTES_ILLUSTRATIONS.diningOut.src} alt={KURTES_ILLUSTRATIONS.diningOut.alt} className="size-[88%] object-contain drop-shadow-[0_18px_20px_rgba(118,85,20,.14)]" /><span className="absolute -bottom-3 left-10 rounded-full bg-[#f4bd4e] px-4 py-2 text-sm font-bold text-[#173c34]">¡Buen provecho!</span></div></div></section>}
+    {mode === 'overview' && <section className="mx-auto mt-3 max-w-[1360px] overflow-hidden rounded-[32px] bg-[#fff4dc] shadow-[0_18px_55px_rgba(48,51,38,.1)]"><div className="grid min-h-[590px] gap-8 px-6 py-9 sm:px-10 sm:py-12 lg:grid-cols-[1fr_.8fr] lg:items-center lg:px-14"><div><span className="inline-flex items-center gap-2 rounded-full bg-white/75 px-3 py-1.5 text-sm font-semibold text-[#80621f]"><Sparkles className="size-4" />{profile.proficiencyLevel} topic experience</span><h1 className="mt-6 font-heading text-[clamp(4rem,8vw,8rem)] font-semibold leading-[.84] tracking-[-.075em] text-[#173c34]">Dining<br />Out</h1><p className="mt-7 max-w-xl text-lg leading-relaxed text-[#71633f]">Move through a meal from getting a table to paying the bill. Learn expressions selected for your current level.</p><div className="mt-8 flex flex-col gap-3 sm:flex-row"><Button onClick={startDiagnostic} className="h-12 rounded-full px-6 text-base font-bold"><Eye className="size-4" />Find my gaps</Button><Button variant="outline" onClick={() => setMode('explore')} className="h-12 rounded-full border-[#cfb96f] bg-white/65 px-6 text-base font-bold">Explore {allItems.length} expressions<ArrowRight className="size-4" /></Button></div><div className="mt-8 flex flex-wrap gap-2 text-sm font-medium text-[#806f42]"><span className="rounded-full bg-white/65 px-3 py-1.5">{sections.length} real moments</span><span className="rounded-full bg-white/65 px-3 py-1.5">Audio included</span><span className="rounded-full bg-white/65 px-3 py-1.5">Progress saved</span></div></div><div className="relative mx-auto grid size-72 place-items-center rounded-full bg-white shadow-[0_28px_70px_rgba(118,85,20,.16)] sm:size-96"><img src={KURTES_ILLUSTRATIONS.diningOut.src} alt={KURTES_ILLUSTRATIONS.diningOut.alt} className="size-[88%] object-contain drop-shadow-[0_18px_20px_rgba(118,85,20,.14)]" /><span className="absolute -bottom-3 left-10 rounded-full bg-[#f4bd4e] px-4 py-2 text-sm font-bold text-[#173c34]">¡Buen provecho!</span></div></div></section>}
 
     {mode === 'diagnostic' && diagnosticItems[diagnosticIndex] && <section className="mx-auto mt-3 max-w-[760px] rounded-[30px] bg-white p-6 shadow-[0_18px_55px_rgba(37,55,49,.1)] sm:p-9"><div className="flex items-center justify-between text-sm font-medium text-muted-foreground"><button onClick={() => setMode('overview')} className="inline-flex items-center gap-1 hover:text-foreground"><ArrowLeft className="size-4" />Exit check</button><span>{diagnosticIndex + 1} of {diagnosticItems.length}</span></div><Progress value={(diagnosticIndex + 1) / diagnosticItems.length * 100} className="mt-4" /><div className="py-10 text-center"><p className="eyebrow">How would you say this?</p><h1 className="mx-auto mt-4 max-w-xl text-3xl font-semibold leading-tight tracking-[-.045em] sm:text-4xl">{diagnosticItems[diagnosticIndex].english}</h1>{!revealed ? <Button onClick={() => setRevealed(true)} variant="outline" className="mt-8 h-12 rounded-full px-7 text-base font-bold"><Eye className="size-4" />Reveal Spanish</Button> : <div className="mt-8 rounded-[24px] bg-[#eef6f2] p-6"><div className="flex flex-col items-center gap-3"><p className="text-2xl font-semibold text-[#173c34]">{diagnosticItems[diagnosticIndex].spanish}</p><SpeechButton text={diagnosticItems[diagnosticIndex].spanish} voice={profile.voicePreference} /></div><p className="mx-auto mt-5 max-w-lg text-base leading-relaxed text-[#52776d]">{diagnosticItems[diagnosticIndex].example_es}</p></div>}</div>{revealed && <div><p className="mb-3 text-center text-sm font-semibold text-muted-foreground">Be honest—how familiar did that feel?</p><div className="grid gap-2.5 sm:grid-cols-3"><button disabled={saving} onClick={() => void answerDiagnostic('new')} className="rounded-[16px] bg-[#fff1ed] px-4 py-4 font-semibold text-[#8b4337] transition hover:-translate-y-0.5">New to me</button><button disabled={saving} onClick={() => void answerDiagnostic('learning')} className="rounded-[16px] bg-[#fff4dc] px-4 py-4 font-semibold text-[#80621f] transition hover:-translate-y-0.5">Familiar</button><button disabled={saving} onClick={() => void answerDiagnostic('confident')} className="rounded-[16px] bg-[#e9f6f0] px-4 py-4 font-semibold text-[#285d4e] transition hover:-translate-y-0.5">I knew it</button></div></div>}{message && <p role="alert" className="mt-4 rounded-[14px] bg-[#fff1ed] p-3 text-sm text-[#8b4337]">{message}</p>}</section>}
 

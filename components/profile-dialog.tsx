@@ -8,68 +8,54 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useLearnerProfile } from '@/components/learner-profile-provider';
+import { CEFR_LEVELS, cefrLevel } from '@/lib/cefr';
+import type { LearnerProfile } from '@/lib/learner-profile';
 import { createClient } from '@/lib/supabase/client';
 import { calculateStreak, dateKey, DEFAULT_LEARNING_TIME_ZONE, deviceTimeZone, timeZoneLabel } from '@/lib/progress';
 import { playSpanishSpeech, type VoicePreference } from '@/lib/speech';
 
-export type LearnerProfile = { displayName: string; proficiencyLevel: string; voicePreference: VoicePreference; learningTimeZone: string; followDeviceTimeZone: boolean };
-const levels = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+export type { LearnerProfile } from '@/lib/learner-profile';
 type ProgressSummary = { streak: number; lessons: number; accuracy: number };
 
-function safeAvatarUrl(value: unknown) {
-  if (typeof value !== 'string') return '';
-  if (value.startsWith('/')) return value;
-  try {
-    const url = new URL(value);
-    return url.protocol === 'https:' && url.hostname.endsWith('.supabase.co') ? value : '';
-  } catch {
-    return '';
-  }
-}
-
 export function ProfileDialog({ onProfileChange, mobile = false, fallbackAvatarSrc }: { onProfileChange: (profile: LearnerProfile) => void; mobile?: boolean; fallbackAvatarSrc?: string }) {
+  const { profile, loading, userId, avatarUrl, setProfile: setSharedProfile } = useLearnerProfile();
   const [open, setOpen] = useState(false);
   const [displayName, setDisplayName] = useState('');
   const [proficiencyLevel, setProficiencyLevel] = useState('');
   const [voicePreference, setVoicePreference] = useState<VoicePreference>('male');
   const [followDeviceTimeZone, setFollowDeviceTimeZone] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
-  const [avatarUrl, setAvatarUrl] = useState('');
   const [progress, setProgress] = useState<ProgressSummary>({ streak: 0, lessons: 0, accuracy: 0 });
 
   useEffect(() => {
+    if (!userId) return;
     const supabase = createClient();
-    void supabase.auth.getUser().then(async ({ data }) => {
-      if (!data.user) return;
-      setAvatarUrl(safeAvatarUrl(data.user.user_metadata?.avatar_url));
-      const [{ data: profile, error }, { data: attempts, count }] = await Promise.all([
-        supabase.from('profiles').select('display_name, proficiency_level, voice_preference, learning_timezone, follow_device_timezone').eq('id', data.user.id).single(),
-        supabase.from('lesson_attempts').select('score, total_activities, completed_at', { count: 'exact' }).eq('user_id', data.user.id).eq('status', 'completed').not('completed_at', 'is', null).order('completed_at', { ascending: false }).limit(90),
-      ]);
-      let learningTimeZone = DEFAULT_LEARNING_TIME_ZONE;
-      if (!error && profile) {
-        const followsDevice = profile.follow_device_timezone === true;
-        const nextProfile = { displayName: profile.display_name ?? '', proficiencyLevel: profile.proficiency_level ?? '', voicePreference: profile.voice_preference === 'female' ? 'female' as const : 'male' as const, learningTimeZone: followsDevice ? deviceTimeZone() : profile.learning_timezone || DEFAULT_LEARNING_TIME_ZONE, followDeviceTimeZone: followsDevice };
-        learningTimeZone = nextProfile.learningTimeZone;
-        setDisplayName(nextProfile.displayName);
-        setProficiencyLevel(nextProfile.proficiencyLevel);
-        setVoicePreference(nextProfile.voicePreference);
-        setFollowDeviceTimeZone(nextProfile.followDeviceTimeZone);
-        onProfileChange(nextProfile);
-      }
+    void supabase.from('lesson_attempts').select('score, total_activities, completed_at', { count: 'exact' })
+      .eq('user_id', userId).eq('status', 'completed').not('completed_at', 'is', null)
+      .order('completed_at', { ascending: false }).limit(90).then(({ data: attempts, count }) => {
       const completedAttempts = attempts ?? [];
       const totalAnswered = completedAttempts.reduce((total, attempt) => total + attempt.total_activities, 0);
       const totalCorrect = completedAttempts.reduce((total, attempt) => total + attempt.score, 0);
-      const completionDates = Array.from(new Set(completedAttempts.map((attempt) => dateKey(new Date(attempt.completed_at), learningTimeZone))));
-      setProgress({ streak: calculateStreak(completionDates, learningTimeZone), lessons: count ?? completedAttempts.length, accuracy: totalAnswered ? Math.round(totalCorrect / totalAnswered * 100) : 0 });
-      setLoading(false);
+      const completionDates = Array.from(new Set(completedAttempts.map((attempt) => dateKey(new Date(attempt.completed_at), profile.learningTimeZone))));
+      setProgress({ streak: calculateStreak(completionDates, profile.learningTimeZone), lessons: count ?? completedAttempts.length, accuracy: totalAnswered ? Math.round(totalCorrect / totalAnswered * 100) : 0 });
     });
-  }, [onProfileChange]);
+  }, [userId, profile.learningTimeZone]);
 
   const profileAvatar = avatarUrl || fallbackAvatarSrc;
-  const initials = displayName.trim().slice(0, 2).toUpperCase() || 'ME';
+  const initials = profile.displayName.trim().slice(0, 2).toUpperCase() || 'ME';
+
+  function changeOpen(nextOpen: boolean) {
+    if (nextOpen) {
+      setDisplayName(profile.displayName);
+      setProficiencyLevel(profile.proficiencyLevel);
+      setVoicePreference(profile.voicePreference);
+      setFollowDeviceTimeZone(profile.followDeviceTimeZone);
+      setMessage('');
+    }
+    setOpen(nextOpen);
+  }
 
   async function saveProfile(event: { preventDefault(): void }) {
     event.preventDefault();
@@ -81,7 +67,7 @@ export function ProfileDialog({ onProfileChange, mobile = false, fallbackAvatarS
     const { error } = await supabase.from('profiles').upsert({
       id: data.user.id,
       display_name: displayName.trim() || null,
-      proficiency_level: proficiencyLevel || null,
+      proficiency_level: cefrLevel(proficiencyLevel) || null,
       level_source: proficiencyLevel ? 'chosen' : null,
       voice_preference: voicePreference,
       learning_timezone: followDeviceTimeZone ? deviceTimeZone() : DEFAULT_LEARNING_TIME_ZONE,
@@ -89,7 +75,8 @@ export function ProfileDialog({ onProfileChange, mobile = false, fallbackAvatarS
     });
     if (error) setMessage('Your profile could not be saved. Please try again.');
     else {
-      const nextProfile = { displayName: displayName.trim(), proficiencyLevel, voicePreference, learningTimeZone: followDeviceTimeZone ? deviceTimeZone() : DEFAULT_LEARNING_TIME_ZONE, followDeviceTimeZone };
+      const nextProfile: LearnerProfile = { displayName: displayName.trim(), proficiencyLevel: cefrLevel(proficiencyLevel), voicePreference, learningTimeZone: followDeviceTimeZone ? deviceTimeZone() : DEFAULT_LEARNING_TIME_ZONE, followDeviceTimeZone };
+      setSharedProfile(nextProfile);
       onProfileChange(nextProfile);
       setOpen(false);
     }
@@ -97,15 +84,15 @@ export function ProfileDialog({ onProfileChange, mobile = false, fallbackAvatarS
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={changeOpen}>
       <DialogTrigger render={<button className={mobile ? 'flex items-center gap-3 text-left' : 'profile-avatar-button'} aria-label="Open profile and settings" />}>
         {mobile ? <><Settings className="size-6" />Profile</> : profileAvatar ? <img src={profileAvatar} alt="" className="profile-avatar-image" /> : <span className="text-xs font-bold">{initials}</span>}
       </DialogTrigger>
       <DialogContent className="max-h-[calc(100dvh-2rem)] max-w-md gap-6 overflow-y-auto rounded-[24px] border border-white/80 p-6 shadow-[0_28px_90px_rgba(20,38,33,.22)] sm:p-7">
-        <DialogHeader><DialogTitle className="text-2xl font-semibold tracking-[-.04em]">Profile</DialogTitle><DialogDescription className="text-base leading-relaxed">Choose a provisional level now. A placement check can refine it later.</DialogDescription></DialogHeader>
+        <DialogHeader><DialogTitle className="text-2xl font-semibold tracking-[-.04em]">Profile</DialogTitle><DialogDescription className="text-base leading-relaxed">Your level controls vocabulary, grammar, conversation, and generated practice.</DialogDescription></DialogHeader>
         <form onSubmit={saveProfile} className="space-y-5">
           <div className="space-y-2"><Label htmlFor="display-name">Display name <span className="font-normal text-muted-foreground">(optional)</span></Label><Input id="display-name" value={displayName} onChange={(event) => setDisplayName(event.target.value)} maxLength={80} placeholder="How should KurtES address you?" disabled={loading} className="h-12 rounded-[14px] bg-[#f7f7f8] px-4" /></div>
-          <div className="space-y-2"><Label htmlFor="proficiency-level">Current Spanish level</Label><Select value={proficiencyLevel} onValueChange={(value) => setProficiencyLevel(value ?? '')} disabled={loading}><SelectTrigger id="proficiency-level" className="h-12 w-full rounded-[14px] bg-[#f7f7f8] px-4"><SelectValue>{proficiencyLevel || 'Choose a level'}</SelectValue></SelectTrigger><SelectContent align="start" className="rounded-[14px] p-1">{levels.map((level) => <SelectItem key={level} value={level} className="rounded-[10px] px-3 py-2.5">{level}</SelectItem>)}</SelectContent></Select></div>
+          <div className="space-y-2"><Label htmlFor="proficiency-level">Current Spanish level</Label><Select value={proficiencyLevel} onValueChange={(value) => setProficiencyLevel(value ?? '')} disabled={loading}><SelectTrigger id="proficiency-level" className="h-12 w-full rounded-[14px] bg-[#f7f7f8] px-4"><SelectValue>{proficiencyLevel || 'Choose a level'}</SelectValue></SelectTrigger><SelectContent align="start" className="rounded-[14px] p-1">{CEFR_LEVELS.map((level) => <SelectItem key={level} value={level} className="rounded-[10px] px-3 py-2.5">{level}</SelectItem>)}</SelectContent></Select></div>
           <fieldset className="space-y-2.5"><legend className="text-sm font-medium">Select Voice</legend><div className="grid grid-cols-2 gap-2.5">{(['male', 'female'] as const).map((voice) => <button key={voice} type="button" aria-pressed={voicePreference === voice} onClick={() => setVoicePreference(voice)} disabled={loading} className={`flex h-12 items-center justify-center gap-2 rounded-[14px] border px-4 text-sm font-semibold transition ${voicePreference === voice ? 'border-primary bg-primary text-white shadow-sm ring-2 ring-primary/15' : 'border-border bg-white text-foreground hover:border-[#9bb9b0] hover:bg-[#f7f9f8]'}`}>{voicePreference === voice && <Check className="size-4" />}{voice === 'male' ? 'Male' : 'Female'}</button>)}</div><button type="button" onClick={() => void playSpanishSpeech('Hola, Kurt. ¿Qué planes tienes hoy?', voicePreference)} className="inline-flex items-center gap-2 rounded-full px-2 py-1 text-sm font-semibold text-primary transition hover:bg-[#eef6f2]"><Volume2 className="size-4" />Preview selected voice</button></fieldset>
           <fieldset className="space-y-2.5"><legend className="text-sm font-medium">Learning day</legend><div className="grid grid-cols-2 gap-2.5"><button type="button" aria-pressed={!followDeviceTimeZone} onClick={() => setFollowDeviceTimeZone(false)} disabled={loading} className={`flex min-h-14 items-center justify-center gap-2 rounded-[14px] border px-3 text-sm font-semibold transition ${!followDeviceTimeZone ? 'border-primary bg-primary text-white shadow-sm ring-2 ring-primary/15' : 'border-border bg-white hover:border-[#9bb9b0]'}`}><Clock3 className="size-4" />New York time</button><button type="button" aria-pressed={followDeviceTimeZone} onClick={() => setFollowDeviceTimeZone(true)} disabled={loading} className={`flex min-h-14 items-center justify-center gap-2 rounded-[14px] border px-3 text-sm font-semibold transition ${followDeviceTimeZone ? 'border-primary bg-primary text-white shadow-sm ring-2 ring-primary/15' : 'border-border bg-white hover:border-[#9bb9b0]'}`}><MapPin className="size-4" />Follow device</button></div><p className="text-sm leading-relaxed text-muted-foreground">{followDeviceTimeZone ? `Currently using ${timeZoneLabel(deviceTimeZone())}. Your streak follows you when your device timezone changes.` : 'Your streak and daily lesson reset at midnight in New York, even while you travel.'}</p></fieldset>
           <section aria-labelledby="profile-progress-title" className="overflow-hidden rounded-[16px] border border-border bg-[#faf7f1]"><h3 id="profile-progress-title" className="border-b border-border/70 px-4 py-3 text-sm font-semibold text-[#173c34]">Progress</h3><div className="grid grid-cols-3 divide-x divide-border/70"><div className="px-3 py-3"><span className="block text-[11px] font-medium text-muted-foreground">Streak</span><strong className="mt-1 block text-lg text-[#173c34]">{progress.streak} <small className="text-[10px] font-medium text-muted-foreground">days</small></strong></div><div className="px-3 py-3"><span className="block text-[11px] font-medium text-muted-foreground">Lessons</span><strong className="mt-1 block text-lg text-[#173c34]">{progress.lessons}</strong></div><div className="px-3 py-3"><span className="block text-[11px] font-medium text-muted-foreground">Accuracy</span><strong className="mt-1 block text-lg text-[#173c34]">{progress.accuracy}%</strong></div></div></section>

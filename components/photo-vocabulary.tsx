@@ -8,6 +8,9 @@ import { KURTES_ILLUSTRATIONS } from '@/lib/illustrations';
 import { preparePhoto, type PreparedPhoto } from '@/lib/photo-input';
 import { requestPhotoAnalysis, type PhotoAnalysis } from '@/lib/photo-analysis';
 import { PhotoVocabularyReview } from './photo-vocabulary-review';
+import { useLearnerProfile } from '@/components/learner-profile-provider';
+import { LevelRequired } from '@/components/level-required';
+import type { LearnerProfile } from '@/lib/learner-profile';
 import styles from './photo-vocabulary.module.css';
 
 type Photo = PreparedPhoto & { url: string };
@@ -39,6 +42,7 @@ function browserConfiguration(ready: boolean) {
 }
 
 export function PhotoVocabulary({ initialSource }: { initialSource: 'upload' | 'camera' }) {
+  const { profile, loading: profileLoading, setProfile } = useLearnerProfile();
   const [source, setSource] = useState<'upload' | 'camera'>(initialSource);
   const [photo, setPhoto] = useState<Photo | null>(null);
   const [error, setError] = useState('');
@@ -59,7 +63,13 @@ export function PhotoVocabulary({ initialSource }: { initialSource: 'upload' | '
   const operation = useRef(0);
   const dragDepth = useRef(0);
   const previewHeading = useRef<HTMLHeadingElement>(null);
-  const onProfileChange = useCallback(() => {}, []);
+  const onProfileChange = useCallback((next: LearnerProfile) => {
+    if (result && next.proficiencyLevel && result.cefr_level !== next.proficiencyLevel) {
+      setResult(null);
+      setError(`Your level changed to ${next.proficiencyLevel}. Find words again to update the suggestions.`);
+    }
+    setProfile(next);
+  }, [result, setProfile]);
 
   const stopCamera = useCallback(() => {
     stream.current?.getTracks().forEach((track) => track.stop());
@@ -197,7 +207,15 @@ export function PhotoVocabulary({ initialSource }: { initialSource: 'upload' | '
     }
   }
 
-  if (result) return <PhotoVocabularyReview result={result} photoUrl={photo?.url ?? null}
+  if (profileLoading) return <main className={styles.page}><VocabularyHeader onProfileChange={onProfileChange} /><div className={styles.content}><div className="h-72 animate-pulse rounded-[28px] bg-white" /></div></main>;
+  if (!profile.proficiencyLevel) return <main className={styles.page}><VocabularyHeader onProfileChange={onProfileChange} /><LevelRequired profile={profile} onProfileChange={onProfileChange} /></main>;
+
+  const resultMatchesLevel = result && result.cefr_level === profile.proficiencyLevel;
+  const displayedError = result && !resultMatchesLevel
+    ? `Your level changed to ${profile.proficiencyLevel}. Find words again to update the suggestions.`
+    : error;
+
+  if (resultMatchesLevel) return <PhotoVocabularyReview result={result} photoUrl={photo?.url ?? null} onProfileChange={onProfileChange}
     onChoosePhoto={() => { cancelCamera(); setResult(null); setError(''); }}
     onReleasePhoto={() => setPhoto(null)} />;
 
@@ -206,7 +224,7 @@ export function PhotoVocabulary({ initialSource }: { initialSource: 'upload' | '
     <div className={styles.content}>
       <a className={styles.back} href="/vocabulary"><ArrowLeft size={17} />Vocabulary</a>
       <header className={styles.heading}>
-        <div><p className={styles.eyebrow}>Your vocabulary</p><h1>Photo vocabulary</h1><p>Choose a photo with the things you want to learn.</p></div>
+        <div><p className={styles.eyebrow}>{profile.proficiencyLevel} vocabulary</p><h1>Photo vocabulary</h1><p>Choose a photo with the things you want to learn.</p></div>
         <img src={KURTES_ILLUSTRATIONS.photoVocabulary.src} alt="" className={styles.headingArt} />
       </header>
       <div className={styles.workspace}>
@@ -239,10 +257,10 @@ export function PhotoVocabulary({ initialSource }: { initialSource: 'upload' | '
           {photo && capture === 'closed' && <div className={styles.analysisActions}>
             <p>KurtES won’t save your photo. Selecting Find words sends it to OpenAI for vocabulary suggestions; OpenAI may retain content temporarily for safety monitoring.</p>
             <details><summary>Photo privacy</summary><p>Your photo is kept only in memory by KurtES and released when you finish or leave. Only accepted words are saved in this browser. <a href="https://developers.openai.com/api/docs/guides/your-data" target="_blank" rel="noreferrer">OpenAI data controls</a></p></details>
-            {analyzing ? <><output className={styles.processing}><LoaderCircle className={styles.spinner} size={18} />Finding words…</output><button className={styles.secondaryButton} onClick={cancelCamera}>Cancel analysis</button><p>Cancel stops waiting; analysis already sent may still incur a charge.</p></> : <button className={styles.primaryButton} disabled={processing} onClick={() => void findWords()}>Find words<ArrowRight size={18} /></button>}
+            {analyzing ? <><output className={styles.processing}><LoaderCircle className={styles.spinner} size={18} />Finding {profile.proficiencyLevel} words…</output><button className={styles.secondaryButton} onClick={cancelCamera}>Cancel analysis</button><p>Cancel stops waiting; analysis already sent may still incur a charge.</p></> : <button className={styles.primaryButton} disabled={processing} onClick={() => void findWords()}>Find {profile.proficiencyLevel} words<ArrowRight size={18} /></button>}
           </div>}
           {processing && <output className={styles.processing}><LoaderCircle className={styles.spinner} size={17} />Preparing your photo…</output>}
-          {error && <div className={styles.error} role="alert">{error}</div>}
+          {displayedError && <div className={styles.error} role="alert">{displayedError}</div>}
           {source === 'camera' && <div className={styles.cameraHelp}><button className={styles.textButton} aria-expanded={helpOpen} aria-controls="camera-help" onClick={() => setHelpOpen(!helpOpen)}>Camera access help</button>{helpOpen && <p id="camera-help">{help}</p>}</div>}
           <div className={styles.privacy}><LockKeyhole size={16} /><p>Opening or replacing a photo does not send it to OpenAI.</p></div>
         </section>

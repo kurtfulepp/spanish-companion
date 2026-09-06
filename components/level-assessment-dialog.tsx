@@ -7,11 +7,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Progress } from '@/components/ui/progress';
 import { createClient } from '@/lib/supabase/client';
 import type { LearnerProfile } from '@/components/profile-dialog';
+import { CEFR_LEVELS, type CEFRLevel } from '@/lib/cefr';
 
-type Level = 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2';
 type Mode = 'home' | 'test' | 'choose' | 'result';
-
-const levels: Level[] = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 const questions = [
   { key: 'plans_subjunctive', prompt: 'Espero que mañana ___ buen tiempo.', options: ['hace', 'haga', 'hará'], correct: 1 },
   { key: 'past_narrative', prompt: 'Cuando era niño, siempre ___ con mis primos los domingos.', options: ['jugué', 'jugaba', 'he jugado'], correct: 1 },
@@ -23,7 +21,7 @@ const questions = [
   { key: 'nuanced_expression', prompt: '“Se me da bien conversar” significa…', options: ['Me resulta fácil conversar', 'Me da vergüenza conversar', 'Me obligan a conversar'], correct: 0 },
 ] as const;
 
-function recommendedLevel(score: number): Level {
+function recommendedLevel(score: number): CEFRLevel {
   if (score <= 2) return 'A2';
   if (score <= 5) return 'B1';
   if (score <= 7) return 'B2';
@@ -36,7 +34,7 @@ export function LevelAssessmentDialog({ profile, onProfileChange }: { profile: L
   const [questionIndex, setQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<number[]>([]);
   const [selected, setSelected] = useState<number | null>(null);
-  const [result, setResult] = useState<{ score: number; level: Level } | null>(null);
+  const [result, setResult] = useState<{ score: number; level: CEFRLevel } | null>(null);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
 
@@ -49,7 +47,7 @@ export function LevelAssessmentDialog({ profile, onProfileChange }: { profile: L
     setMessage('');
   }
 
-  async function saveLevel(level: Level, source: 'chosen' | 'assessed', completedAnswers?: number[]) {
+  async function saveLevel(level: CEFRLevel, source: 'chosen' | 'assessed', completedAnswers?: number[]) {
     setSaving(true);
     setMessage('');
     const supabase = createClient();
@@ -98,16 +96,16 @@ export function LevelAssessmentDialog({ profile, onProfileChange }: { profile: L
   }
 
   const currentQuestion = questions[questionIndex];
-  const displayedLevel = profile.proficiencyLevel || 'B1–B2';
+  const displayedLevel = profile.proficiencyLevel || 'Set level';
 
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => { setOpen(nextOpen); if (!nextOpen) reset(); }}>
       <DialogTrigger render={<button className="group inline-flex items-center gap-2 rounded-full px-2 py-1 text-sm font-semibold uppercase tracking-[.13em] text-[#4c7b70] transition hover:bg-white/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35" aria-label={`Current level ${displayedLevel}. Test or adjust level.`} />}>
-        <span>{displayedLevel} · Everyday conversation</span><SlidersHorizontal className="size-3.5 transition group-hover:rotate-6" />
+        <span>{displayedLevel}{profile.proficiencyLevel ? ' · Adjust level' : ''}</span><SlidersHorizontal className="size-3.5 transition group-hover:rotate-6" />
       </DialogTrigger>
       <DialogContent className="max-w-[560px] gap-6 rounded-[28px] border border-white/80 p-6 shadow-[0_28px_90px_rgba(20,38,33,.22)] sm:p-8">
         {mode === 'home' && <>
-          <DialogHeader><DialogTitle className="text-3xl font-semibold tracking-[-.045em]">Your Spanish level</DialogTitle><DialogDescription className="text-base leading-relaxed">Your level shapes the vocabulary, grammar, and pace of each lesson.</DialogDescription></DialogHeader>
+          <DialogHeader><DialogTitle className="text-3xl font-semibold tracking-[-.045em]">Your Spanish level</DialogTitle><DialogDescription className="text-base leading-relaxed">Your selected level controls vocabulary, grammar, conversation, and generated practice.</DialogDescription></DialogHeader>
           <div className="rounded-[20px] bg-[#eef6f2] p-5"><p className="text-sm font-medium text-[#52776d]">Current level</p><p className="mt-1 text-4xl font-semibold tracking-[-.055em] text-[#173c34]">{displayedLevel}</p></div>
           <div className="grid gap-3 sm:grid-cols-2"><button onClick={() => reset('test')} className="rounded-[20px] bg-primary p-5 text-left text-white transition hover:-translate-y-0.5 hover:bg-[#245247]"><Sparkles className="size-5" /><strong className="mt-5 block text-lg">Take a quick check</strong><span className="mt-1 block text-sm text-white/70">8 questions · about 2 minutes</span></button><button onClick={() => reset('choose')} className="rounded-[20px] bg-secondary p-5 text-left transition hover:-translate-y-0.5 hover:bg-[#e9eeec]"><SlidersHorizontal className="size-5 text-primary" /><strong className="mt-5 block text-lg">Choose it yourself</strong><span className="mt-1 block text-sm text-muted-foreground">Adjust from A1 through C2</span></button></div>
         </>}
@@ -120,7 +118,7 @@ export function LevelAssessmentDialog({ profile, onProfileChange }: { profile: L
 
         {mode === 'choose' && <>
           <DialogHeader><button onClick={() => reset()} className="mb-2 inline-flex w-fit items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground"><ArrowLeft className="size-4" />Back</button><DialogTitle className="text-3xl font-semibold tracking-[-.045em]">Choose your level</DialogTitle><DialogDescription className="text-base leading-relaxed">You can change this whenever the lessons feel too easy or too difficult.</DialogDescription></DialogHeader>
-          <div className="grid grid-cols-3 gap-3">{levels.map((level) => <button key={level} disabled={saving} onClick={() => void saveLevel(level, 'chosen')} className={`rounded-[18px] border px-4 py-5 text-xl font-semibold transition hover:-translate-y-0.5 ${profile.proficiencyLevel === level ? 'border-primary bg-primary text-white' : 'border-border bg-white hover:border-[#9bb9b0]'}`}>{level}</button>)}</div>
+          <div className="grid grid-cols-3 gap-3">{CEFR_LEVELS.map((level) => <button key={level} disabled={saving} onClick={() => void saveLevel(level, 'chosen')} className={`rounded-[18px] border px-4 py-5 text-xl font-semibold transition hover:-translate-y-0.5 ${profile.proficiencyLevel === level ? 'border-primary bg-primary text-white' : 'border-border bg-white hover:border-[#9bb9b0]'}`}>{level}</button>)}</div>
         </>}
 
         {mode === 'result' && result && <>

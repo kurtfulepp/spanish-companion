@@ -83,7 +83,7 @@ export function DemoVocabularyLists() {
         <button disabled={busy} title="Delete list" aria-label={`Delete ${list.name}`} onClick={() => setDeleting(list)}><Trash2 size={17} /></button>
       </div></div>
       <h3><button className={styles.titleButton} onClick={() => setOpened(list)}>{list.name}</button></h3>
-      <p>{list.words.length} {list.words.length === 1 ? 'word' : 'words'}{list.completed ? ' · Fully learned' : ''}</p>
+      <p>{list.cefrLevel ? `${list.cefrLevel} · ` : ''}{list.words.length} {list.words.length === 1 ? 'word' : 'words'}{list.completed ? ' · Fully learned' : ''}</p>
       <p>{list.practicedCount ?? 0} practiced · {list.confidentCount ?? 0} confident</p>
       <p className={styles.sample}>{list.words.slice(0, 3).map((word) => word.english).join(' · ')}{list.words.length > 3 ? ' …' : ''}</p>
       <a className={base.primaryButton} href={`/vocabulary/custom/${encodeURIComponent(list.id)}`}>Practice list</a>

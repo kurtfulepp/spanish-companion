@@ -50,14 +50,19 @@ export function DailyLessonDialog({ open, onOpenChange, level, voice, onComplete
     if (!open) return;
     const supabase = createClient();
     void (async () => {
-      let { data: lessonData, error: lessonError } = await supabase.from('lessons').select('id, title, description, level, estimated_minutes').eq('is_published', true).eq('level', level || 'B2').order('published_at', { ascending: false }).limit(1).maybeSingle();
-      if (!lessonData && !lessonError && level !== 'B2') {
-        const fallback = await supabase.from('lessons').select('id, title, description, level, estimated_minutes').eq('is_published', true).eq('level', 'B2').order('published_at', { ascending: false }).limit(1).maybeSingle();
-        lessonData = fallback.data;
-        lessonError = fallback.error;
-      }
+      setLoading(true);
+      setLesson(null);
+      setActivities([]);
+      setView('intro');
+      setActivityIndex(0);
+      setSelected('');
+      setChecked(false);
+      setScore(0);
+      setAttemptId(null);
+      setMessage('');
+      const { data: lessonData, error: lessonError } = await supabase.from('lessons').select('id, title, description, level, estimated_minutes').eq('is_published', true).eq('level', level).order('published_at', { ascending: false }).limit(1).maybeSingle();
       if (lessonError || !lessonData) {
-        setMessage('Today’s lesson is not available yet. Please try again shortly.');
+        setMessage(`A ${level} guided lesson is not available yet.`);
         setLoading(false);
         return;
       }
@@ -146,6 +151,7 @@ export function DailyLessonDialog({ open, onOpenChange, level, voice, onComplete
 
   const activity = activities[activityIndex];
   const correct = activity ? selected === activity.correct_answer : false;
+  const reviewPhrase = activities.find((item) => item.audio_text)?.audio_text;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -175,7 +181,7 @@ export function DailyLessonDialog({ open, onOpenChange, level, voice, onComplete
           {!checked ? <Button onClick={() => void checkAnswer()} disabled={!selected || saving} className="h-12 rounded-full text-base font-bold">{saving ? 'Saving…' : 'Check answer'}</Button> : <Button onClick={() => void continueLesson()} disabled={saving} className="h-12 rounded-full text-base font-bold">{activityIndex === activities.length - 1 ? 'Complete lesson' : 'Continue'}<ChevronRight className="size-4" /></Button>}
         </div>}
 
-        {!loading && view === 'complete' && lesson && <div className="grid gap-7 p-7 text-center sm:p-10"><span className="mx-auto grid size-16 place-items-center rounded-full bg-[#e9f6f0] text-[#32806a]"><Check className="size-8" /></span><DialogHeader><DialogTitle className="text-4xl font-semibold tracking-[-.055em] text-[#173c34]">Lesson complete</DialogTitle><DialogDescription className="text-base leading-relaxed">You answered {score} of {activities.length} correctly. Your progress and today’s completion are saved.</DialogDescription></DialogHeader><div className="rounded-[22px] bg-[#fff4dc] p-5"><p className="text-sm font-medium text-[#8a6424]">Today’s phrase</p><p className="mt-2 text-2xl font-semibold text-[#694b18]">¿Qué planes tienes hoy?</p><button onClick={() => void playSpanishSpeech('¿Qué planes tienes hoy?', voice)} className="mx-auto mt-3 inline-flex items-center gap-2 text-sm font-semibold text-[#694b18]"><Volume2 className="size-4" />Hear it again</button></div><div className="flex flex-col gap-3 sm:flex-row"><Button onClick={() => onOpenChange(false)} className="h-12 flex-1 rounded-full text-base font-bold">Back to today</Button><Button variant="outline" onClick={() => { setView('intro'); setActivityIndex(0); setSelected(''); setChecked(false); setScore(0); setAttemptId(null); setAudioState('idle'); audioRequestInProgress.current = false; }} className="h-12 rounded-full px-6"><RotateCcw className="size-4" />Practice again</Button></div></div>}
+        {!loading && view === 'complete' && lesson && <div className="grid gap-7 p-7 text-center sm:p-10"><span className="mx-auto grid size-16 place-items-center rounded-full bg-[#e9f6f0] text-[#32806a]"><Check className="size-8" /></span><DialogHeader><DialogTitle className="text-4xl font-semibold tracking-[-.055em] text-[#173c34]">Lesson complete</DialogTitle><DialogDescription className="text-base leading-relaxed">You answered {score} of {activities.length} correctly. Your progress is saved.</DialogDescription></DialogHeader>{reviewPhrase && <div className="rounded-[22px] bg-[#fff4dc] p-5"><p className="text-sm font-medium text-[#8a6424]">Lesson phrase</p><p className="mt-2 text-2xl font-semibold text-[#694b18]">{reviewPhrase}</p><button onClick={() => void playSpanishSpeech(reviewPhrase, voice)} className="mx-auto mt-3 inline-flex items-center gap-2 text-sm font-semibold text-[#694b18]"><Volume2 className="size-4" />Hear it again</button></div>}<div className="flex flex-col gap-3 sm:flex-row"><Button onClick={() => onOpenChange(false)} className="h-12 flex-1 rounded-full text-base font-bold">Back to conversation</Button><Button variant="outline" onClick={() => { setView('intro'); setActivityIndex(0); setSelected(''); setChecked(false); setScore(0); setAttemptId(null); setAudioState('idle'); audioRequestInProgress.current = false; }} className="h-12 rounded-full px-6"><RotateCcw className="size-4" />Practice again</Button></div></div>}
       </DialogContent>
     </Dialog>
   );

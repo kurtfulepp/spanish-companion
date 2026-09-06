@@ -1,5 +1,7 @@
+import { isCEFRLevel, type CEFRLevel } from './cefr';
+
 export type SavedDemoWord = { english: string; spanish: string };
-export type SavedDemoList = { id: string; name: string; words: SavedDemoWord[]; completed: boolean; createdAt: string; source?: 'demo' | 'photo' };
+export type SavedDemoList = { id: string; name: string; words: SavedDemoWord[]; completed: boolean; createdAt: string; source?: 'demo' | 'photo'; cefrLevel?: CEFRLevel };
 const prefix = 'kurtes:fpo-vocabulary:v1:';
 export const DEMO_LISTS_CHANGED = 'kurtes-demo-lists-changed';
 
@@ -11,7 +13,7 @@ function validList(value: unknown): value is SavedDemoList {
   if (!value || typeof value !== 'object') return false;
   const item = value as SavedDemoList;
   return typeof item.id === 'string' && typeof item.name === 'string' && Boolean(item.name.trim()) &&
-    (item.source === undefined || item.source === 'demo' || item.source === 'photo') && typeof item.completed === 'boolean' && typeof item.createdAt === 'string' && Array.isArray(item.words) && item.words.length > 0 &&
+    (item.source === undefined || item.source === 'demo' || item.source === 'photo') && (item.cefrLevel === undefined || isCEFRLevel(item.cefrLevel)) && typeof item.completed === 'boolean' && typeof item.createdAt === 'string' && Array.isArray(item.words) && item.words.length > 0 &&
     item.words.every((word) => word && typeof word.english === 'string' && Boolean(word.english.trim()) && typeof word.spanish === 'string' && Boolean(word.spanish.trim()));
 }
 export function readDemoLists(storage: Pick<Storage, 'getItem'>, owner: string): SavedDemoList[] {
@@ -23,7 +25,7 @@ export function readDemoLists(storage: Pick<Storage, 'getItem'>, owner: string):
 }
 // Explicit serialization keeps image data and other draft properties out of storage.
 function textOnly(list: SavedDemoList): SavedDemoList {
-  return { id: list.id, source: list.source ?? 'demo', name: list.name.trim(), completed: list.completed, createdAt: list.createdAt,
+  return { id: list.id, source: list.source ?? 'demo', cefrLevel: list.cefrLevel, name: list.name.trim(), completed: list.completed, createdAt: list.createdAt,
     words: list.words.map((word) => ({ english: word.english.trim(), spanish: word.spanish.trim() })) };
 }
 export function writeDemoList(storage: Pick<Storage, 'getItem' | 'setItem'>, owner: string, list: SavedDemoList) {

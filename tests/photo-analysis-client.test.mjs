@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { build } from 'esbuild';
 const { outputFiles } = await build({entryPoints:['lib/photo-analysis.ts'],bundle:true,write:false,format:'esm',platform:'browser'});
 const { requestPhotoAnalysis } = await import(`data:text/javascript;base64,${Buffer.from(outputFiles[0].text).toString('base64')}`);
-const result = { suggested_title:'Kitchen', items:[{english:'mug',spanish:'la taza',usage_note:null}], requires_review:true };
+const result = { suggested_title:'Kitchen', items:[{english:'mug',spanish:'la taza',usage_note:null}], cefr_level:'B1', requires_review:true };
 const photo = new Blob(['image fixture'],{type:'image/jpeg'});
 
 test('sends one raw photo with auth cookies, abort signal, and no cache',async()=>{

@@ -98,3 +98,11 @@ The public kitchen simulation and its entry links are retired. The photo review 
 ## Custom-list practice
 
 Custom list tiles and their word dialogs include “Practice list” plus practiced/confident counts. The practice route reuses the shared warm surfaces, terracotta type, gold actions, and normal scrolling header. Show English first, “Reveal Spanish”, then “Needs practice” / “I knew it”. Save each rating before advancing and keep the card available on failure. Display account progress in the overview and session summary. All-confident lists move to Completed; a later Needs practice rating reopens the list. Preserve manual completion and restore without inventing or resetting word ratings. No AI requests are needed for practice.
+
+## Level-personalized learning
+
+Show one exact active CEFR level: A1, A2, B1, B2, C1, or C2. Do not present a learner as a broad “B1–B2” range and do not silently substitute B2 content when another level is selected. The profile level is the shared source of truth for Vocabulary, Grammar, Conversation, guided lessons, and AI-generated practice.
+
+When the learner saves a new level in Profile or accepts an assessment result, update the mounted experience immediately. Reset route-local exercises to the newly selected level, refetch level-filtered database content, and preserve prior progress. Existing custom lists remain available because they are learner-owned; photo-generated lists retain the CEFR level used to create them.
+
+A profile without a level does not receive assumed learning content. Show the shared level-selection experience before exposing lessons or generating vocabulary. Use concise factual labels such as “B1 vocabulary” and “B1 topic experience.”
