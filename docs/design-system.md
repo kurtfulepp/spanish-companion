@@ -106,3 +106,9 @@ Show one exact active CEFR level: A1, A2, B1, B2, C1, or C2. Do not present a le
 When the learner saves a new level in Profile or accepts an assessment result, update the mounted experience immediately. Reset route-local exercises to the newly selected level, refetch level-filtered database content, and preserve prior progress. Existing custom lists remain available because they are learner-owned; photo-generated lists retain the CEFR level used to create them.
 
 A profile without a level does not receive assumed learning content. Show the shared level-selection experience before exposing lessons or generating vocabulary. Use concise factual labels such as “B1 vocabulary” and “B1 topic experience.”
+
+## Vocabulary topic experiences
+
+Every published topic card opens the shared topic experience: six real-world moments, an adaptive gap check, an expression browser, saved progress, and optional controlled AI expansion. Dining Out is the layout reference; do not create separate route-specific interaction systems for later topics. Keep each topic's registered object illustration and pastel surface while retaining the shared warm typography, controls, and navigation.
+
+The gap check uses up to eight expressions balanced across moments and prioritizes unseen and due material. “Add 12 expressions” is an explicit learner action, not an automatic page-load cost. Label personally generated material “Expanded” and preserve its stable progress identity. Keep operational model, quota, and storage details out of the interface.
