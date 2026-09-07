@@ -1,5 +1,9 @@
 # Spanish Companion / KurtES
 
+For any educational work—learning content, exercises, feedback, assessments, progression, personalization, or AI generation/grading prompts—read `docs/educational-rubric.md` and the relevant sections of `docs/grammar-curriculum-plan.md` before editing. These are the owner's adopted educational standard for the entire app, including Vocabulary, Grammar, Conversation, guided lessons, and generated practice. Use the complete A1–C2 curriculum as the coverage baseline; prototype lessons are not the syllabus. Preserve exact profile-level alignment, cumulative prerequisites, accepted regional variants, and the distinction between practice completion and demonstrated learning. When changing an educational standard, update the rubric, curriculum, affected shared content/prompts, and relevant checks together. Owner adoption does not imply independent teacher approval or full implementation of the curriculum.
+
+For curriculum and level browsing, follow the **Curriculum preview rule** in `docs/educational-rubric.md`: show all six levels; label levels above the profile as read-only curriculum previews; do not change the profile, unlock higher-level practice, or record learning evidence through browsing. Keep current-level practice and supported earlier-level review distinct, and enforce practice eligibility on the server.
+
 For UI, onboarding, visual design, or product copy changes, read `docs/design-system.md` before editing. The vocabulary overview is the visual reference; use the shared tokens in `app/design-system.css` and existing components rather than inventing a new route-specific brand.
 
 The brand voice is direct and understated. Do not add motivational taglines. Do not restore the rejected dark-green welcome screen or cobalt interface redesign. Follow the documented color roles; contextual colors in illustrations and learning states are not new primary palettes.

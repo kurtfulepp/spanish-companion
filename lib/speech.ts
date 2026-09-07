@@ -2,6 +2,21 @@ const audioCache = new Map<string, string>();
 const pendingAudio = new Map<string, Promise<string>>();
 let activeAudio: HTMLAudioElement | null = null;
 let finishActivePlayback: (() => void) | null = null;
+let finishBrowserPlayback: (() => void) | null = null;
+let playbackVersion = 0;
+
+/** Also invalidates audio still being fetched so it cannot start after recording begins. */
+export function stopSpanishSpeech() {
+  playbackVersion += 1;
+  if (activeAudio) {
+    activeAudio.pause();
+    activeAudio.currentTime = 0;
+  }
+  finishActivePlayback?.();
+  finishBrowserPlayback?.();
+  if (typeof window !== 'undefined' && 'speechSynthesis' in window)
+    window.speechSynthesis.cancel();
+}
 
 export type VoicePreference = 'male' | 'female';
 
@@ -10,18 +25,33 @@ function speakWithBrowser(text: string) {
     return Promise.reject(new Error('Speech playback is unavailable'));
   }
 
-  return new Promise<void>((resolve) => {
+  return new Promise<void>((resolve, reject) => {
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'es-ES';
     utterance.rate = 0.88;
-    utterance.onend = () => resolve();
-    utterance.onerror = () => resolve();
+    const finish = () => {
+      if (finishBrowserPlayback === finish) finishBrowserPlayback = null;
+      resolve();
+    };
+    finishBrowserPlayback = finish;
+    utterance.onend = finish;
+    utterance.onerror = () => {
+      if (finishBrowserPlayback === finish) finishBrowserPlayback = null;
+      reject(
+        new Error('Speech playback is unavailable. Use Listen to try again.'),
+      );
+    };
     window.speechSynthesis.speak(utterance);
   });
 }
 
-export async function playSpanishSpeech(text: string, voice: VoicePreference = 'male') {
+export async function playSpanishSpeech(
+  text: string,
+  voice: VoicePreference = 'male',
+) {
+  stopSpanishSpeech();
+  const version = playbackVersion;
   const cacheKey = `${voice}:${text}`;
 
   try {
@@ -51,6 +81,8 @@ export async function playSpanishSpeech(text: string, voice: VoicePreference = '
       }
       audioUrl = await request;
     }
+
+    if (version !== playbackVersion) return;
 
     if (activeAudio) {
       activeAudio.pause();
@@ -86,6 +118,7 @@ export async function playSpanishSpeech(text: string, voice: VoicePreference = '
       void audio.play().catch(fail);
     });
   } catch {
+    if (version !== playbackVersion) return;
     await speakWithBrowser(text);
   }
 }

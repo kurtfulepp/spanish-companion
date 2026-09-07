@@ -2,6 +2,8 @@
 
 ## Source of truth
 
+Learning objectives, level expectations, practice, and assessment follow the owner's adopted [educational rubric](educational-rubric.md) and full [A1–C2 curriculum](grammar-curriculum-plan.md). This document remains the authority for visual design and product voice.
+
 The vocabulary overview at `/vocabulary` is the visual reference for new screens. The user explicitly selected its colors and style on 2026-09-04. Use this system when extending the app; do not invent a separate onboarding brand.
 
 This standard consolidates the vocabulary hierarchy refinement (`d0f6133`), the custom illustration work (`fbf6557`, `15cf06d`), and the user's onboarding feedback. The direct and understated voice below supersedes existing promotional copy where new copy is needed. Existing screens can contain older decisions; their presence is not approval to repeat them.
@@ -103,6 +105,8 @@ Custom list tiles and their word dialogs include “Practice list” plus practi
 
 Show one exact active CEFR level: A1, A2, B1, B2, C1, or C2. Do not present a learner as a broad “B1–B2” range and do not silently substitute B2 content when another level is selected. The profile level is the shared source of truth for Vocabulary, Grammar, Conversation, guided lessons, and AI-generated practice.
 
+Where a curriculum browser is provided, follow the [Curriculum preview rule](educational-rubric.md#curriculum-preview-rule): show all six levels and use **Review**, **Your level**, or **Curriculum preview** according to their relationship to the profile. Higher-level previews show requirements and explanations without practice controls or progress awards. Keep the active profile level visible and unchanged while browsing.
+
 When the learner saves a new level in Profile or accepts an assessment result, update the mounted experience immediately. Reset route-local exercises to the newly selected level, refetch level-filtered database content, and preserve prior progress. Existing custom lists remain available because they are learner-owned; photo-generated lists retain the CEFR level used to create them.
 
 A profile without a level does not receive assumed learning content. Show the shared level-selection experience before exposing lessons or generating vocabulary. Use concise factual labels such as “B1 vocabulary” and “B1 topic experience.”
@@ -112,3 +116,17 @@ A profile without a level does not receive assumed learning content. Show the sh
 Every published topic card opens the shared topic experience: six real-world moments, an adaptive gap check, an expression browser, saved progress, and optional controlled AI expansion. Dining Out is the layout reference; do not create separate route-specific interaction systems for later topics. Keep each topic's registered object illustration and pastel surface while retaining the shared warm typography, controls, and navigation.
 
 The gap check uses up to eight expressions balanced across moments and prioritizes unseen and due material. “Add 12 expressions” is an explicit learner action, not an automatic page-load cost. Label personally generated material “Expanded” and preserve its stable progress identity. Keep operational model, quota, and storage details out of the interface.
+
+## Conversation practice
+
+Organize Conversation around topics the learner has practiced. Use each topic's registered illustration, name, and pastel surface. A saved expression response with a last-seen timestamp at the exact active CEFR level unlocks its topic moment; simply opening content does not. Needs practice counts as practice, and mastery of the whole topic is not required. Enforce eligibility on the server for every conversation request.
+
+Show the connection to learning explicitly: practiced-expression counts, available moments, and “Based on your practice” expressions. Prioritize expressions needing practice. Unpracticed moments link back to the topic. Changing profile level resets the active conversation and reloads eligibility without changing previous vocabulary progress. The vocabulary gap-check summary links to the topic's conversations.
+
+Microphone input is an essential part of the Conversation MVP. The first version supports spoken or typed adaptive exchanges of up to six learner turns: tap Speak, stop recording, check the editable transcription, send it, and hear the partner reply. Retain hints, translations, manual Listen controls, and an AI review grounded in the submitted text. Play replies aloud by default with a visible switch and an actionable fallback when playback is unavailable. Request microphone permission only after Speak; show recording state, elapsed time, Stop and transcribe, and Cancel. Stop tracks on finish, cancellation, navigation, hidden page, and level changes, including a permission grant arriving after cancellation. Limit each recording to 45 seconds, keep audio only in memory, and allow transcription retry before discarding. Starting recording stops current and pending speech playback. Show “Available now” and “Not included yet” before starting. Hands-free conversation, interruptions, pronunciation scoring, saved history, custom scenarios, grammar-based conversations, and custom-list integration remain outside this version. Transcripts and reviews stay in component memory and are lost on leaving or refreshing. Feedback does not change vocabulary ratings or the learner's level. Never present prerecorded scripts, fixtures, or a service failure as a successful generated conversation.
+
+## Grammar curriculum
+
+Every module at every level includes visible plain-language subtext explaining when someone would use its grammar. Give concrete communicative situations and clarify the purpose of technical titles. Keep this explanation visible before expansion; detailed grammar types, rule scope, and learning objectives remain inside the module. Source the subtext from the canonical curriculum so it also appears in higher-level previews.
+
+Use the shared scrolling learning header and compact brand hero. Grammar presents the exact active profile level while the curriculum dropdown lists all six levels, including C1 and C2. Label earlier-level review and higher-level curriculum previews explicitly. Provide a grammar-type filter and expandable module outlines. Keep available rule lessons visually distinct from outlines. A rule follows Learn → Practice → Write → Review; use labeled native inputs, keyboard-operable choices, visible feedback, and separate evidence labels. Account-saved practice, ungraded writing, and visit-only sample results must remain distinguishable. Do not imply mastery, complete module coverage, or teacher approval from a short lesson.

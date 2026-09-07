@@ -529,6 +529,9 @@ export function VocabularyTopicPage({ themeId }: { themeId: string }) {
             Explore {theme.title}
             <ChevronRight className="size-4" />
           </Button>
+          <a href={`/conversation?topic=${encodeURIComponent(themeId)}`} className="mt-5 flex min-h-11 items-center justify-center gap-2 font-semibold text-[var(--brand-ink)] underline underline-offset-4">
+            Practice a conversation <ArrowRight className="size-4" />
+          </a>
         </section>
       )}
 

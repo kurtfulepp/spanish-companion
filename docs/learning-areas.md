@@ -2,6 +2,8 @@
 
 KurtES is organized around three actions rather than a generic dashboard.
 
+All learning areas follow the owner's adopted [educational rubric](educational-rubric.md) and [A1–C2 grammar curriculum](grammar-curriculum-plan.md). They share rule-level expectations for recognition, formation, contextual choice, and independent use; feature-specific sample content does not replace the curriculum.
+
 ## Primary navigation
 
 - **Vocabulary** builds useful words and phrases through themed worlds.

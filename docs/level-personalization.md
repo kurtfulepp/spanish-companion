@@ -1,8 +1,12 @@
 # Level personalization
 
+Educational level expectations come from the owner's adopted [educational rubric](educational-rubric.md) and [A1–C2 curriculum](grammar-curriculum-plan.md). This document describes the runtime mechanics for applying the shared active level.
+
 KurtES uses `public.profiles.proficiency_level` as the single active CEFR level. Supported values are A1, A2, B1, B2, C1, and C2. A null level blocks curated and generated learning content until the learner chooses a level or accepts an assessment result.
 
 ## Runtime behavior
+
+Curriculum browsing follows the app-wide [Curriculum preview rule](educational-rubric.md#curriculum-preview-rule). Keep the browsed level separate from `profiles.proficiency_level`: all six levels remain discoverable, higher levels provide read-only requirements and explanations, and browsing never writes profile or practice progress. Starting higher-level practice requires an explicit profile-level change or accepted assessment result. Existing exact-level activity restrictions still apply; earlier-level review is available where the learning area implements it.
 
 - `LearnerProfileProvider` loads the authenticated profile once and shares it across learning routes.
 - Profile saves and assessment results update Supabase first, then update the shared client state.
