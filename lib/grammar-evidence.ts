@@ -1,3 +1,4 @@
+import { PAST_PRACTICE } from './grammar-past-content';
 import { CEFR_LEVELS, type CEFRLevel } from './cefr';
 import {
   GRAMMAR_RULES,
@@ -19,17 +20,74 @@ export type GrammarEvidence = {
   ruleId: string;
   version: number;
   savedAt: string;
+  mode?: 'lesson' | 'revisit';
+  checkScores?: Record<EvidenceKind, { correct: number; total: number }>;
   scores: Record<EvidenceKind, { correct: number; total: number }>;
   writing: string;
   selfReview: boolean[];
 };
+export function practiceMode(
+  lesson: RuleLesson,
+  answers: Record<string, string>,
+): 'lesson' | 'revisit' {
+  return PAST_PRACTICE[lesson.id]?.revisit.some((item) =>
+    Object.hasOwn(answers, item.id),
+  )
+    ? 'revisit'
+    : 'lesson';
+}
+
+export function validGrammarAnswers(
+  lesson: RuleLesson,
+  value: unknown,
+): value is Record<string, string> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const answers = value as Record<string, unknown>;
+  const extra = PAST_PRACTICE[lesson.id];
+  const groups = [
+    lesson.exercises,
+    ...(extra ? [[...lesson.exercises, ...extra.check], extra.revisit] : []),
+  ];
+  return groups.some(
+    (group) =>
+      Object.keys(answers).length === group.length &&
+      group.every(
+        (item) =>
+          typeof answers[item.id] === 'string' &&
+          (answers[item.id] as string).trim().length > 0 &&
+          (answers[item.id] as string).length <= 300,
+      ),
+  );
+}
+
 export function scoreRule(lesson: RuleLesson, answers: Record<string, string>) {
+  const exercises =
+    practiceMode(lesson, answers) === 'revisit'
+      ? PAST_PRACTICE[lesson.id].revisit
+      : lesson.exercises;
+  return scoreExercises(exercises, answers);
+}
+
+export function startingScores(
+  lesson: RuleLesson,
+  answers: Record<string, string>,
+) {
+  const check = PAST_PRACTICE[lesson.id]?.check;
+  return check?.every((item) => Object.hasOwn(answers, item.id))
+    ? scoreExercises(check, answers)
+    : undefined;
+}
+
+export function scoreExercises(
+  exercises: RuleLesson['exercises'],
+  answers: Record<string, string>,
+) {
   const scores = {
     recognition: { correct: 0, total: 0 },
     formation: { correct: 0, total: 0 },
     choice: { correct: 0, total: 0 },
   };
-  for (const exercise of lesson.exercises) {
+  for (const exercise of exercises) {
     scores[exercise.kind].total++;
     if (checkGrammarAnswer(exercise, answers[exercise.id] ?? ''))
       scores[exercise.kind].correct++;
@@ -64,16 +122,7 @@ export function validateGrammarSubmission(
     Array.isArray(input.answers)
   )
     return null;
-  if (
-    Object.keys(input.answers).length !== rule.exercises.length ||
-    rule.exercises.some(
-      (exercise) =>
-        typeof input.answers?.[exercise.id] !== 'string' ||
-        !input.answers[exercise.id].trim() ||
-        input.answers[exercise.id].length > 300,
-    )
-  )
-    return null;
+  if (!validGrammarAnswers(rule, input.answers)) return null;
   if (
     typeof input.writing !== 'string' ||
     input.writing.trim().length < 1 ||

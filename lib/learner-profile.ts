@@ -2,6 +2,8 @@ import type { CEFRLevel } from './cefr';
 import { DEFAULT_LEARNING_TIME_ZONE } from './progress';
 import type { VoicePreference } from './speech';
 
+export const DEFAULT_PROFILE_AVATAR_SRC = '/brand/kurtes-center.png';
+
 export type LearnerProfile = {
   displayName: string;
   proficiencyLevel: CEFRLevel | '';

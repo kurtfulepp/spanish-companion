@@ -72,7 +72,7 @@ Grammar is the first implementation of this rule. Apply it consistently when add
 
 This adoption makes the curriculum a persistent project requirement for future work across the app. It does not certify that existing lessons, databases, generation prompts, or progress logic already implement every requirement. Track implementation gaps against the curriculum rather than treating prototype behavior as the standard.
 
-Grammar now derives its 87-module catalog from the full curriculum and includes six versioned rule lessons with separate recognition, formation, contextual-choice, and ungraded writing evidence. Account-owned rule progress is implemented; the 18 earlier sample lessons retain visit-only results. Complete rule coverage, independent lesson review, graded production, retention assessment, and comprehensive runtime prompt alignment remain implementation work governed by this rubric. See [Grammar learning](grammar-learning.md) for the current scope and verification.
+Grammar now derives its 87-module catalog from the full curriculum and includes eleven versioned rule lessons, including a seven-step past-narration path with separate recognition, formation, contextual-choice, and ungraded writing evidence. Account-owned rule progress is implemented; the 18 earlier sample lessons retain visit-only results. Complete rule coverage, independent lesson review, graded production, validated retention assessment, and comprehensive runtime prompt alignment remain implementation work governed by this rubric. See [Grammar learning](grammar-learning.md) for the current scope and verification.
 
 ## Maintenance
 
@@ -83,3 +83,9 @@ The owner may revise the educational standard. Record the date, changed rule or 
 **7 September 2026:** Owner clarified that C1 and C2 grammar requirements must remain visible in the level dropdown. All six curriculum levels are now discoverable; previews remain distinct from the learner’s active practice level.
 
 **7 September 2026:** Owner explicitly adopted the higher-level curriculum preview behavior as a reusable app-wide rule, documented above.
+
+## Assessed vocabulary knowledge
+
+**Owner-adopted, 12 September 2026.** Vocabulary uses **Known / Needs practice**, determined from scored unassisted recall and contextual use. **Not assessed** is the absence of a usable result, including uncertainty, assistance, or a dispute; it is not a failing score. Self-ratings remain historical and never become assessed knowledge automatically. Accepted regional variants and equivalent expressions must be recognized, and feedback must isolate the target skill.
+
+Known is scoped to the expression and assessment at the exact active profile level. It does not establish broad CEFR proficiency, mastery, listening, or pronunciation. Recheck with fresh content after a delay to gather retention evidence. Preserve prior attempts when results change. AI assessments must be identified as such and allow a challenge that removes the disputed result from knowledge and gap counts. The first implementation is provisional and has not received independent teacher calibration; it must not drive high-confidence mastery, placement, or automatic level advancement. See [Vocabulary assessment](vocabulary-assessment.md) for the implementation and validation limits.

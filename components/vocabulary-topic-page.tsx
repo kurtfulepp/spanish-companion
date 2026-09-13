@@ -5,25 +5,19 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
-  Check,
-  ChevronRight,
   Eye,
   LoaderCircle,
   Sparkles,
   WandSparkles,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { SpeechButton } from '@/components/speech-button';
 import { VocabularyHeader } from '@/components/vocabulary-header';
 import type { LearnerProfile } from '@/components/profile-dialog';
 import { useLearnerProfile } from '@/components/learner-profile-provider';
 import { LevelRequired } from '@/components/level-required';
 import { createClient } from '@/lib/supabase/client';
-import {
-  selectDiagnosticItems,
-  type DiagnosticProgress,
-} from '@/lib/topic-diagnostic';
+import { VocabularyAssessment } from '@/components/vocabulary-assessment';
 import { topicPresentation } from '@/lib/vocabulary-topics';
 import type { CEFRLevel } from '@/lib/cefr';
 
@@ -48,12 +42,7 @@ type VocabularySection = {
   vocabulary_items: Omit<VocabularyItem, 'sectionId'>[];
 };
 type Theme = { id: string; title: string; description: string };
-type ItemProgress = {
-  status: 'new' | 'learning' | 'confident';
-  confidence: number;
-  nextReviewAt: string;
-};
-type Mode = 'overview' | 'diagnostic' | 'diagnostic-complete' | 'explore';
+type Mode = 'overview' | 'diagnostic' | 'explore';
 
 export function VocabularyTopicPage({ themeId }: { themeId: string }) {
   const presentation = topicPresentation(themeId);
@@ -65,16 +54,11 @@ export function VocabularyTopicPage({ themeId }: { themeId: string }) {
   } = useLearnerProfile();
   const [theme, setTheme] = useState<Theme | null>(null);
   const [sections, setSections] = useState<VocabularySection[]>([]);
-  const [itemProgress, setItemProgress] = useState<
-    Record<string, ItemProgress>
-  >({});
   const [mode, setMode] = useState<Mode>('overview');
   const [selectedSection, setSelectedSection] = useState('all');
-  const [diagnosticIndex, setDiagnosticIndex] = useState(0);
-  const [diagnosticIds, setDiagnosticIds] = useState<string[]>([]);
-  const [revealed, setRevealed] = useState(false);
+  const [assessmentTarget, setAssessmentTarget] = useState<string | undefined>();
+  const [recentlyStudied, setRecentlyStudied] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [expanding, setExpanding] = useState(false);
   const [message, setMessage] = useState('');
   const updateProfile = useCallback(
@@ -90,7 +74,6 @@ export function VocabularyTopicPage({ themeId }: { themeId: string }) {
     const [
       { data: themeData, error: themeError },
       { data: sectionData, error: sectionError },
-      { data: progressData },
     ] = await Promise.all([
       supabase
         .from('vocabulary_themes')
@@ -105,10 +88,6 @@ export function VocabularyTopicPage({ themeId }: { themeId: string }) {
         )
         .eq('theme_id', themeId)
         .order('sort_order'),
-      supabase
-        .from('user_vocabulary_progress')
-        .select('item_id, status, confidence, next_review_at')
-        .eq('user_id', userId),
     ]);
     if (themeError || sectionError || !themeData || !sectionData?.length) {
       setTheme(null);
@@ -125,18 +104,6 @@ export function VocabularyTopicPage({ themeId }: { themeId: string }) {
         })),
       );
     }
-    setItemProgress(
-      Object.fromEntries(
-        (progressData ?? []).map((entry) => [
-          entry.item_id,
-          {
-            status: entry.status,
-            confidence: entry.confidence,
-            nextReviewAt: entry.next_review_at,
-          },
-        ]),
-      ),
-    );
     setLoading(false);
   }, [profile.proficiencyLevel, themeId, userId]);
 
@@ -146,7 +113,7 @@ export function VocabularyTopicPage({ themeId }: { themeId: string }) {
       await loadTopic();
       setMode('overview');
       setSelectedSection('all');
-      setDiagnosticIds([]);
+      setAssessmentTarget(undefined);
     })();
   }, [loadTopic, profile.proficiencyLevel, profileLoading, userId]);
 
@@ -160,88 +127,14 @@ export function VocabularyTopicPage({ themeId }: { themeId: string }) {
       ),
     [sections],
   );
-  const diagnosticItems = diagnosticIds
-    .map((id) => allItems.find((item) => item.id === id))
-    .filter((item): item is VocabularyItem => Boolean(item));
   const visibleSections =
     selectedSection === 'all'
       ? sections
       : sections.filter((section) => section.slug === selectedSection);
-  const currentProgress = allItems
-    .map((item) => itemProgress[item.id])
-    .filter(Boolean);
-  const started = currentProgress.length;
-  const confident = currentProgress.filter(
-    (entry) => entry.status === 'confident',
-  ).length;
-  const needsPractice = currentProgress.filter(
-    (entry) => entry.status !== 'confident',
-  ).length;
   const generatedCount = allItems.filter((item) => item.source === 'ai').length;
-
-  async function saveProgress(itemId: string, status: ItemProgress['status']) {
-    if (!userId) return false;
-    setSaving(true);
-    setMessage('');
-    const confidence = status === 'new' ? 0 : status === 'learning' ? 1 : 3;
-    const nextReview = new Date();
-    nextReview.setDate(
-      nextReview.getDate() +
-        (status === 'confident' ? 14 : status === 'learning' ? 1 : 0),
-    );
-    const { error } = await createClient()
-      .from('user_vocabulary_progress')
-      .upsert(
-        {
-          user_id: userId,
-          item_id: itemId,
-          status,
-          confidence,
-          last_seen_at: new Date().toISOString(),
-          next_review_at: nextReview.toISOString(),
-        },
-        { onConflict: 'user_id,item_id' },
-      );
-    if (error) {
-      setMessage('That update could not be saved. Please try again.');
-      setSaving(false);
-      return false;
-    }
-    setItemProgress((current) => ({
-      ...current,
-      [itemId]: { status, confidence, nextReviewAt: nextReview.toISOString() },
-    }));
-    setSaving(false);
-    return true;
-  }
-
-  async function answerDiagnostic(status: ItemProgress['status']) {
-    const item = diagnosticItems[diagnosticIndex];
-    if (!item || !(await saveProgress(item.id, status))) return;
-    if (diagnosticIndex === diagnosticItems.length - 1)
-      setMode('diagnostic-complete');
-    else {
-      setDiagnosticIndex((current) => current + 1);
-      setRevealed(false);
-    }
-  }
-
   function startDiagnostic() {
-    const progress: Record<string, DiagnosticProgress> = Object.fromEntries(
-      Object.entries(itemProgress).map(([id, item]) => [
-        id,
-        { status: item.status, nextReviewAt: item.nextReviewAt },
-      ]),
-    );
-    setDiagnosticIds(
-      selectDiagnosticItems(
-        allItems.map((item) => ({ ...item, sortOrder: item.sort_order })),
-        progress,
-      ).map((item) => item.id),
-    );
-    setDiagnosticIndex(0);
-    setRevealed(false);
-    setMessage('');
+    setAssessmentTarget(undefined);
+    setRecentlyStudied(false);
     setMode('diagnostic');
   }
 
@@ -351,7 +244,7 @@ export function VocabularyTopicPage({ themeId }: { themeId: string }) {
                     className="h-12 rounded-full px-6 text-base font-bold"
                   >
                     <Eye className="size-4" />
-                    Find my gaps
+                    Assess vocabulary
                   </Button>
                 ) : (
                   <Button
@@ -401,139 +294,7 @@ export function VocabularyTopicPage({ themeId }: { themeId: string }) {
         </section>
       )}
 
-      {mode === 'diagnostic' && diagnosticItems[diagnosticIndex] && (
-        <section className="mx-auto mt-3 max-w-[760px] rounded-[30px] bg-white p-6 shadow-[0_18px_55px_rgba(37,55,49,.1)] sm:p-9">
-          <div className="flex items-center justify-between text-sm font-medium text-muted-foreground">
-            <button
-              onClick={() => setMode('overview')}
-              className="inline-flex items-center gap-1 hover:text-foreground"
-            >
-              <ArrowLeft className="size-4" />
-              Exit check
-            </button>
-            <span>
-              {diagnosticIndex + 1} of {diagnosticItems.length}
-            </span>
-          </div>
-          <Progress
-            value={((diagnosticIndex + 1) / diagnosticItems.length) * 100}
-            className="mt-4"
-          />
-          <div className="py-10 text-center">
-            <p className="eyebrow">How would you say this?</p>
-            <h1 className="mx-auto mt-4 max-w-xl text-3xl font-semibold leading-tight tracking-[-.045em] sm:text-4xl">
-              {diagnosticItems[diagnosticIndex].english}
-            </h1>
-            {!revealed ? (
-              <Button
-                onClick={() => setRevealed(true)}
-                variant="outline"
-                className="mt-8 h-12 rounded-full px-7 text-base font-bold"
-              >
-                <Eye className="size-4" />
-                Reveal Spanish
-              </Button>
-            ) : (
-              <div className="mt-8 rounded-[24px] bg-[#eef6f2] p-6">
-                <div className="flex flex-col items-center gap-3">
-                  <p className="text-2xl font-semibold text-[#173c34]">
-                    {diagnosticItems[diagnosticIndex].spanish}
-                  </p>
-                  <SpeechButton
-                    text={diagnosticItems[diagnosticIndex].spanish}
-                    voice={profile.voicePreference}
-                  />
-                </div>
-                <p className="mx-auto mt-5 max-w-lg text-base leading-relaxed text-[#52776d]">
-                  {diagnosticItems[diagnosticIndex].example_es}
-                </p>
-              </div>
-            )}
-          </div>
-          {revealed && (
-            <div>
-              <p className="mb-3 text-center text-sm font-semibold text-muted-foreground">
-                How familiar did that feel?
-              </p>
-              <div className="grid gap-2.5 sm:grid-cols-3">
-                <button
-                  disabled={saving}
-                  onClick={() => void answerDiagnostic('new')}
-                  className="rounded-[16px] bg-[#fff1ed] px-4 py-4 font-semibold text-[#8b4337] transition hover:-translate-y-0.5"
-                >
-                  New to me
-                </button>
-                <button
-                  disabled={saving}
-                  onClick={() => void answerDiagnostic('learning')}
-                  className="rounded-[16px] bg-[#fff4dc] px-4 py-4 font-semibold text-[#80621f] transition hover:-translate-y-0.5"
-                >
-                  Familiar
-                </button>
-                <button
-                  disabled={saving}
-                  onClick={() => void answerDiagnostic('confident')}
-                  className="rounded-[16px] bg-[#e9f6f0] px-4 py-4 font-semibold text-[#285d4e] transition hover:-translate-y-0.5"
-                >
-                  I knew it
-                </button>
-              </div>
-            </div>
-          )}
-          {message && (
-            <p
-              role="alert"
-              className="mt-4 rounded-[14px] bg-[#fff1ed] p-3 text-sm text-[#8b4337]"
-            >
-              {message}
-            </p>
-          )}
-        </section>
-      )}
-
-      {mode === 'diagnostic-complete' && (
-        <section className="mx-auto mt-3 max-w-[760px] rounded-[30px] bg-white p-7 text-center shadow-[0_18px_55px_rgba(37,55,49,.1)] sm:p-10">
-          <span className="mx-auto grid size-20 place-items-center rounded-[20px] bg-[#fff1d2]">
-            <img
-              src={presentation.image.src}
-              alt=""
-              className="size-[88%] object-contain"
-            />
-          </span>
-          <h1 className="mt-7 text-4xl font-semibold tracking-[-.055em] text-[#173c34]">
-            Your next review is ready.
-          </h1>
-          <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-muted-foreground">
-            You marked {needsPractice} expressions for practice and {confident}{' '}
-            as confident. New and due expressions will be prioritized the next
-            time you check this topic.
-          </p>
-          <div className="mt-8 grid grid-cols-2 gap-3">
-            <div className="rounded-[18px] bg-[#fff4dc] p-5">
-              <strong className="block text-3xl text-[#80621f]">
-                {needsPractice}
-              </strong>
-              <span className="text-sm text-[#80621f]">To practice</span>
-            </div>
-            <div className="rounded-[18px] bg-[#e9f6f0] p-5">
-              <strong className="block text-3xl text-[#285d4e]">
-                {confident}
-              </strong>
-              <span className="text-sm text-[#285d4e]">Confident</span>
-            </div>
-          </div>
-          <Button
-            onClick={() => setMode('explore')}
-            className="mt-8 h-12 rounded-full px-7 text-base font-bold"
-          >
-            Explore {theme.title}
-            <ChevronRight className="size-4" />
-          </Button>
-          <a href={`/conversation?topic=${encodeURIComponent(themeId)}`} className="mt-5 flex min-h-11 items-center justify-center gap-2 font-semibold text-[var(--brand-ink)] underline underline-offset-4">
-            Practice a conversation <ArrowRight className="size-4" />
-          </a>
-        </section>
-      )}
+      {mode === 'diagnostic' && <VocabularyAssessment scope={{ themeId }} targetId={assessmentTarget} recentlyStudied={recentlyStudied} onExit={() => setMode('overview')} />}
 
       {mode === 'explore' && (
         <section className="mx-auto mt-3 max-w-[1360px]">
@@ -557,10 +318,10 @@ export function VocabularyTopicPage({ themeId }: { themeId: string }) {
               </div>
               <div className="flex flex-wrap gap-2">
                 <span className="rounded-full bg-white/10 px-3 py-2 text-sm">
-                  {started} started
+                  {allItems.length} expressions
                 </span>
                 <span className="rounded-full bg-white/10 px-3 py-2 text-sm">
-                  {confident} confident
+                  Assessed knowledge
                 </span>
                 {generatedCount > 0 && (
                   <span className="rounded-full bg-white/10 px-3 py-2 text-sm">
@@ -626,7 +387,6 @@ export function VocabularyTopicPage({ themeId }: { themeId: string }) {
                 </div>
                 <div className="grid gap-4 lg:grid-cols-2">
                   {section.vocabulary_items.map((item) => {
-                    const progress = itemProgress[item.id];
                     return (
                       <article
                         key={item.id}
@@ -667,27 +427,8 @@ export function VocabularyTopicPage({ themeId }: { themeId: string }) {
                           </p>
                         )}
                         <div className="mt-5 flex items-center gap-2 border-t border-border/70 pt-4">
-                          <button
-                            disabled={saving}
-                            onClick={() =>
-                              void saveProgress(item.id, 'learning')
-                            }
-                            className={`rounded-full px-3 py-2 text-sm font-semibold transition ${progress?.status === 'learning' || progress?.status === 'new' ? 'bg-[#fff4dc] text-[#80621f]' : 'bg-secondary text-muted-foreground hover:text-foreground'}`}
-                          >
-                            Practice this
-                          </button>
-                          <button
-                            disabled={saving}
-                            onClick={() =>
-                              void saveProgress(item.id, 'confident')
-                            }
-                            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold transition ${progress?.status === 'confident' ? 'bg-primary text-white' : 'bg-secondary text-muted-foreground hover:text-foreground'}`}
-                          >
-                            {progress?.status === 'confident' && (
-                              <Check className="size-3.5" />
-                            )}
-                            I know this
-                          </button>
+                          <button className="rounded-full bg-[var(--brand-gold)] px-4 py-2 text-sm font-semibold text-[var(--brand-ink)]" onClick={() => { setAssessmentTarget(item.id); setRecentlyStudied(true); setMode('diagnostic'); }}>Check this expression</button>
+                          <span className="text-xs text-muted-foreground">Browsing does not mark it known.</span>
                         </div>
                       </article>
                     );

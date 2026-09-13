@@ -1,4 +1,4 @@
-export type LearningArea = 'vocabulary' | 'grammar' | 'conversation';
+export type LearningArea = 'home' | 'vocabulary' | 'grammar' | 'conversation';
 
 const LAST_LEARNING_PATH_KEY = 'kurtes:last-learning-path';
 

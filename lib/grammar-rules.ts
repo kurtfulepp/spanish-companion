@@ -1,3 +1,4 @@
+import { PAST_RULES } from './grammar-past-content';
 import type { CEFRLevel } from './cefr';
 
 export type EvidenceKind = 'recognition' | 'formation' | 'choice';
@@ -589,6 +590,7 @@ export const GRAMMAR_RULES: RuleLesson[] = [
         'Digan lo que digan, examinaré el informe. Lo examinaré independientemente de las opiniones que expresen. Cambian las opiniones posibles; se mantiene mi decisión de examinarlo.',
     },
   },
+  ...PAST_RULES,
 ];
 
 export function normalizeGrammarAnswer(answer: string) {

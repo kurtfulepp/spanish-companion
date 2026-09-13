@@ -7,7 +7,7 @@
 | Email | `auth.signUp({ email })` → Supabase Auth user email | Required, browser email validation, trimmed before submission |
 | Password | `auth.signUp({ password })` → Supabase Auth password handling | Required, at least 8 characters in this UI; Supabase applies its configured policy |
 | Review | No additional stored fields | Final explicit creation action; password is not displayed |
-| Confirmation link | `/auth/confirm` exchanges PKCE code or verifies token hash | Completes authentication and redirects to `/vocabulary` |
+| Confirmation link | `/auth/confirm` exchanges PKCE code or verifies token hash | Completes authentication and redirects to `/home` |
 | Profile ID | `public.profiles.id` → `auth.users.id` | Created by `on_auth_user_created_create_profile` in the existing profiles migration |
 
 Do not write email or passwords into `profiles`, local storage, logs, or an application API. The password lives only in React state until submission and is cleared on the confirmation screen. Do not create a second profile in the unauthenticated browser: RLS only allows authenticated users to access their own row.
@@ -26,7 +26,7 @@ Configure each deployed origin's `/auth/confirm` as an allowed Supabase redirect
 
 - `/` always renders the welcome screen, even with an existing session. It exposes exactly two actions: Join and Sign in.
 - `/join` always opens Email → Password → Review, including when the browser has another valid session. Only Create account invokes Supabase signup. Email confirmation completes authentication; the profile trigger supplies the account row.
-- `/sign-in` uses Supabase email/password authentication. A still-valid session is reused and leads to `/vocabulary`; expired or absent sessions require credentials. Staying authenticated for seven days would retain this behavior, not prompt for a password on every visit.
+- `/sign-in` uses Supabase email/password authentication. A still-valid session is reused and leads to `/home`; expired or absent sessions require credentials. Staying authenticated for seven days would retain this behavior, not prompt for a password on every visit.
 - Signed-out visits to protected pages return to `/`, so newcomers see the welcome choices. Unauthenticated API requests receive 401 JSON, never application data or an HTML sign-in page.
 - Signed-in users can navigate directly to protected routes. “Always welcome” applies to opening the app at `/`; it does not interrupt in-app navigation or redirect every authenticated deep link.
 - Sign out ends the session and returns to `/`.

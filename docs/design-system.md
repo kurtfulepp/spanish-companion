@@ -39,7 +39,7 @@ Use white for large type over the coral hero. The compact red ES mark uses its o
 - Keep the shared navigation header in normal document flow so it scrolls away with the page. Do not make it sticky or fixed; it must not cover the working content.
 - Use a gold pill with terracotta text for the active navigation destination. Authenticated headers keep Profile/Settings and Sign out visible at the right; do not replace those account controls with a generic hamburger.
 - Sign out returns to the public opening screen, where Sign in occupies the same conventional upper-right position.
-- The upper-left brand is the KurtES wordmark only. A learner's personal avatar appears once, at the upper right, and opens Profile and Settings when selected.
+- The upper-left brand is the KurtES wordmark only. The learner's personal avatar at the upper right opens Profile and Settings when selected. Home also uses that same profile avatar as the artwork in the “Level” tile.
 - Hero corners are 24px; topic cards 26px; large focused lesson panels may use the existing 32px radius. Buttons and status chips are pills.
 - Use soft warm shadows from the reference, not strong black shadows or a new glow treatment.
 - Let the opening title fill the available screen height with one clear primary action. Learning screens keep compact heroes and put usable content close to the header; do not carry the title-page scale into every route.
@@ -48,7 +48,7 @@ Use white for large type over the coral hero. The compact red ES mark uses its o
 
 The opening screen omits the “Spanish practice” label. Join and Sign in have equal width and height; omit the Join arrow and distinguish hierarchy through surface treatment, not size. Its authentication actions are Join (account creation) and Sign in (existing account), not “Start practice”. The title screen has no duplicate header Sign in link.
 
-Authentication entry links use full document navigation (`<a href="/sign-in">` and `<a href="/join">`), following the existing vocabulary navigation fix for vinext. Sign in and Join use the existing Supabase email-and-password flow and start every authenticated learner on `/vocabulary`. Preserve refreshed session cookies through server redirects; do not add an alternate authentication provider or bypass.
+Authentication entry links use full document navigation (`<a href="/sign-in">` and `<a href="/join">`), following the existing vocabulary navigation fix for vinext. Sign in and Join use the existing Supabase email-and-password flow and start every authenticated learner on `/home`. Preserve refreshed session cookies through server redirects; do not add an alternate authentication provider or bypass.
 
 The Sign in screen uses the coral-to-marigold brand treatment rather than a dark-green panel. Show one KurtES wordmark in its illustrated left pane on desktop; do not repeat it over the form. Omit promotional taglines from both panes.
 
@@ -99,7 +99,8 @@ The public kitchen simulation and its entry links are retired. The photo review 
 
 ## Custom-list practice
 
-Custom list tiles and their word dialogs include “Practice list” plus practiced/confident counts. The practice route reuses the shared warm surfaces, terracotta type, gold actions, and normal scrolling header. Show English first, “Reveal Spanish”, then “Needs practice” / “I knew it”. Save each rating before advancing and keep the card available on failure. Display account progress in the overview and session summary. All-confident lists move to Completed; a later Needs practice rating reopens the list. Preserve manual completion and restore without inventing or resetting word ratings. No AI requests are needed for practice.
+Custom list tiles and their word dialogs link to “Assess list”. Use the same scored recall and contextual-use flow as topic vocabulary. Show Known, Needs practice, and Not assessed, with an AI-assessed explanation and a visible challenge action. Retain historical self-ratings and manual archive/restore as separate account history; do not display old confident counts as assessed knowledge or auto-archive a list from one successful check.
+
 
 ## Level-personalized learning
 
@@ -113,9 +114,9 @@ A profile without a level does not receive assumed learning content. Show the sh
 
 ## Vocabulary topic experiences
 
-Every published topic card opens the shared topic experience: six real-world moments, an adaptive gap check, an expression browser, saved progress, and optional controlled AI expansion. Dining Out is the layout reference; do not create separate route-specific interaction systems for later topics. Keep each topic's registered object illustration and pastel surface while retaining the shared warm typography, controls, and navigation.
+Every published topic card opens the shared topic experience: six real-world moments, an assessed recall-and-use check, an expression browser, saved progress, and optional controlled AI expansion. Dining Out is the layout reference; do not create separate route-specific interaction systems for later topics. Keep each topic's registered object illustration and pastel surface while retaining the shared warm typography, controls, and navigation.
 
-The gap check uses up to eight expressions balanced across moments and prioritizes unseen and due material. “Add 12 expressions” is an explicit learner action, not an automatic page-load cost. Label personally generated material “Expanded” and preserve its stable progress identity. Keep operational model, quota, and storage details out of the interface.
+Assessments prioritize identified gaps, then unassessed expressions and due reviews. Each check uses typed recall and a fresh contextual response; show feedback only after both responses. Browsing and recently assisted practice do not award Known. “Add 12 expressions” is an explicit learner action, not an automatic page-load cost. Label personally generated material “Expanded” and preserve its stable progress identity. Keep operational model, quota, and storage details out of the interface.
 
 ## Conversation practice
 
@@ -130,3 +131,19 @@ Microphone input is an essential part of the Conversation MVP. The first version
 Every module at every level includes visible plain-language subtext explaining when someone would use its grammar. Give concrete communicative situations and clarify the purpose of technical titles. Keep this explanation visible before expansion; detailed grammar types, rule scope, and learning objectives remain inside the module. Source the subtext from the canonical curriculum so it also appears in higher-level previews.
 
 Use the shared scrolling learning header and compact brand hero. Grammar presents the exact active profile level while the curriculum dropdown lists all six levels, including C1 and C2. Label earlier-level review and higher-level curriculum previews explicitly. Provide a grammar-type filter and expandable module outlines. Keep available rule lessons visually distinct from outlines. A rule follows Learn → Practice → Write → Review; use labeled native inputs, keyboard-operable choices, visible feedback, and separate evidence labels. Account-saved practice, ungraded writing, and visit-only sample results must remain distinguishable. Do not imply mastery, complete module coverage, or teacher approval from a short lesson.
+
+## Home dashboard
+
+The signed-in homescreen is `/home`. Home is the first navigation item on desktop and mobile, and the wordmark returns there. Sign in, immediate Join sessions, and confirmation links land on Home. The public opening screen remains at `/`.
+
+Use a responsive tile grid with oversized level and metric type, the shared coral hero, warm cream and peach surfaces, quiet borders, and existing registered artwork. Keep the exact profile level prominent. Show saved progress and actionable practice areas, with loading, unavailable, and empty states kept distinct. Current-level vocabulary and supported earlier grammar review remain distinguishable; custom lists retain their own saved content.
+
+Use these Home tile labels exactly: “Level”, “Practice hours”, “Vocabulary you know”, “Progress”, “Needs practice”, and “Ready for assessment”. Omit the possessive “Your” from these labels.
+
+Do not repeat the learner's display name as a standalone label at the right of the Home overview heading.
+
+The “Level” tile uses the signed-in learner's profile avatar, with the same default avatar as the account header when none is set. Read it from the shared learner profile so changes stay synchronized. Do not use the topic compass in this tile.
+
+Active practice duration is not recorded yet: show an em dash and “Not recorded yet”, never fabricated hours or lesson estimates presented as measured time. Replace confident and mastered labels with “Vocabulary you know”, “Needs practice”, and “Ready for assessment”, based only on verified assessment receipts. Show observed later successful checks separately. Label results AI-assessed and revisable; retain grammar practice as practice until production assessment is implemented. Counts describe saved practice, not CEFR completion.
+
+Vocabulary assessments follow [Vocabulary assessment](vocabulary-assessment.md). Keep recall and use as two clear steps, visible labels and keyboard-operable text fields, an explicit “I don’t know” action, retained answers on failures, and “My answer may be valid” after grading. Do not show an answer or play target audio before both submissions.

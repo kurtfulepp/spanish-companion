@@ -17,7 +17,7 @@ export default function SignInPage() {
   useEffect(() => {
     const supabase = createClient();
     void supabase.auth.getUser().then(({ data }) => {
-      if (data.user) window.location.replace('/vocabulary');
+      if (data.user) window.location.replace('/home');
     }).catch(() => setMessage('Could not check your session. Sign in to try again.'));
   }, []);
 
@@ -29,7 +29,7 @@ export default function SignInPage() {
     try {
       const { error } = await createClient().auth.signInWithPassword({ email, password });
       if (error) setMessage('Email or password was not recognized.');
-      else window.location.replace('/vocabulary');
+      else window.location.replace('/home');
     } catch {
       setMessage('Could not connect. Check your connection and try again.');
     } finally {

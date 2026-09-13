@@ -327,7 +327,7 @@ export function ConversationPractice({
             <div className={styles.panel}>
               <h3>Practice a topic to start</h3>
               <p>
-                Save a “Needs practice” or “Confident” response in a vocabulary
+                Complete an assessment in a vocabulary
                 topic at {level}. Its related conversation will then be
                 available here.
               </p>
@@ -425,7 +425,7 @@ export function ConversationPractice({
             <details className={`${styles.details} ${styles.panel}`}>
               <summary>Topics to practice first</summary>
               <p>
-                Opening a topic does not unlock conversation. Save a practice
+                Opening a topic does not unlock conversation. Complete a vocabulary assessment or save a practice
                 response at your current level.
               </p>
               <div className={styles.lockedTopics}>

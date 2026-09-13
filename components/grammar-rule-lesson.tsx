@@ -13,27 +13,45 @@ import {
 } from '@/lib/grammar-rules';
 import {
   scoreRule,
+  scoreExercises,
+  startingScores,
   type GrammarEvidence,
   type GrammarSubmission,
 } from '@/lib/grammar-evidence';
+import { PAST_PRACTICE } from '@/lib/grammar-past-content';
 import styles from '@/app/grammar/grammar.module.css';
 
 export function GrammarRuleLesson({
   lesson,
   previous,
   previewOnly = false,
+  mode = 'lesson',
+  backLabel = 'Back to curriculum',
   onBack,
   onSaved,
 }: {
   lesson: RuleLesson;
   previous?: GrammarEvidence;
   previewOnly?: boolean;
+  mode?: 'lesson' | 'revisit';
+  backLabel?: string;
   onBack: () => void;
   onSaved: (attempt: GrammarEvidence) => void;
 }) {
-  const [stage, setStage] = useState<'learn' | 'practice' | 'write' | 'result'>(
-    'learn',
-  );
+  const extra = PAST_PRACTICE[lesson.id];
+  const review = mode === 'revisit' && !!extra && !previewOnly;
+  const firstStage = previewOnly
+    ? 'learn'
+    : review
+      ? 'practice'
+      : extra
+        ? 'check'
+        : 'learn';
+  const [stage, setStage] = useState<
+    'check' | 'notice' | 'learn' | 'practice' | 'write' | 'result'
+  >(firstStage);
+  const practice = review ? extra.revisit : lesson.exercises;
+  const questions = stage === 'check' && extra ? extra.check : practice;
   const [position, setPosition] = useState(0);
   const [answer, setAnswer] = useState('');
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -49,7 +67,7 @@ export function GrammarRuleLesson({
   const submission = useRef<GrammarSubmission | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const nextButton = useRef<HTMLButtonElement>(null);
-  const exercise = lesson.exercises[position];
+  const exercise = questions[position] ?? questions[0];
   const checked = Object.hasOwn(answers, exercise.id);
   const correct = checkGrammarAnswer(exercise, answers[exercise.id] ?? '');
   const scores = scoreRule(lesson, answers);
@@ -57,7 +75,8 @@ export function GrammarRuleLesson({
     heading.current?.focus();
   }, [stage, position]);
   useEffect(() => {
-    if (checked && stage === 'practice') nextButton.current?.focus();
+    if (checked && (stage === 'practice' || stage === 'check'))
+      nextButton.current?.focus();
   }, [checked, stage]);
 
   async function save() {
@@ -102,30 +121,90 @@ export function GrammarRuleLesson({
   return (
     <div className={styles.content}>
       <Button variant="ghost" className={styles.back} onClick={onBack}>
-        <ArrowLeft size={16} /> Back to curriculum
+        <ArrowLeft size={16} /> {backLabel}
       </Button>
       <section className={styles.lesson}>
         <header className={styles.lessonHeader}>
           <p className={styles.category}>
-            {lesson.level} · {lesson.moduleId} · Rule lesson
+            {lesson.level} · {lesson.moduleId} ·{' '}
+            {previewOnly
+              ? 'Curriculum preview'
+              : review
+                ? 'Review set'
+                : 'Rule lesson'}
           </p>
           <h1>{lesson.title}</h1>
           <p>{lesson.objective}</p>
           <ol className={styles.steps} aria-label="Lesson steps">
-            {(['learn', 'practice', 'write', 'result'] as const).map(
-              (step, index) => (
-                <li
-                  key={step}
-                  aria-current={stage === step ? 'step' : undefined}
-                >
-                  <span>{index + 1}</span>
-                  {['Learn', 'Practice', 'Write', 'Review'][index]}
-                </li>
-              ),
-            )}
+            {(previewOnly
+              ? ['learn']
+              : review
+                ? ['practice', 'write', 'result']
+                : extra
+                  ? ['check', 'notice', 'learn', 'practice', 'write', 'result']
+                  : ['learn', 'practice', 'write', 'result']
+            ).map((step, index) => (
+              <li key={step} aria-current={stage === step ? 'step' : undefined}>
+                <span>{index + 1}</span>
+                {
+                  {
+                    check: 'Check',
+                    notice: 'Notice',
+                    learn: 'Learn',
+                    practice: 'Practice',
+                    write: 'Write',
+                    result: 'Review',
+                  }[step]
+                }
+              </li>
+            ))}
           </ol>
         </header>
         <div className={styles.lessonBody}>
+          {stage === 'notice' && extra && (
+            <>
+              <h2 ref={heading} tabIndex={-1}>
+                Your starting point
+              </h2>
+              <p className={styles.prose}>
+                This short check guides today’s practice. It is not placement or
+                a mastery assessment.
+              </p>
+              <div className={styles.evidenceGrid}>
+                {Object.entries(scoreExercises(extra.check, answers))
+                  .filter(([, score]) => score.total > 0)
+                  .map(([kind, score]) => (
+                    <div key={kind}>
+                      <strong>
+                        {score.correct}/{score.total}
+                      </strong>
+                      <span>
+                        {EVIDENCE_LABELS[kind as keyof typeof EVIDENCE_LABELS]}
+                      </span>
+                    </div>
+                  ))}
+              </div>
+              <p className={styles.prose}>
+                {extra.check.some(
+                  (item) => !checkGrammarAnswer(item, answers[item.id] ?? ''),
+                )
+                  ? 'Work through the contrast and explanation, then practise the forms and meaning separately.'
+                  : 'Continue with the contrast, then check whether you can use the rule in new sentences.'}
+              </p>
+              <h3>Notice what changes</h3>
+              <div className={styles.ruleExample}>
+                <p lang="es">{extra.notice.first}</p>
+                <p lang="es">{extra.notice.second}</p>
+              </div>
+              <p className={styles.prose}>{extra.notice.explanation}</p>
+              <Button
+                className={styles.primary}
+                onClick={() => setStage('learn')}
+              >
+                Read the rule <ArrowRight size={16} />
+              </Button>
+            </>
+          )}
           {stage === 'learn' && (
             <>
               <h2 ref={heading} tabIndex={-1}>
@@ -174,7 +253,7 @@ export function GrammarRuleLesson({
                 </p>
               ) : (
                 <div className={styles.actions}>
-                  <span>4 checks, then your own writing</span>
+                  <span>{practice.length} checks, then your own writing</span>
                   <Button
                     className={styles.primary}
                     onClick={() => setStage('practice')}
@@ -185,15 +264,33 @@ export function GrammarRuleLesson({
               )}
             </>
           )}
-          {stage === 'practice' && (
+          {(stage === 'practice' || stage === 'check') && (
             <>
               <p className={styles.practiceMeta}>
+                {stage === 'check'
+                  ? 'Starting check · '
+                  : review
+                    ? 'Review set · '
+                    : ''}
                 {EVIDENCE_LABELS[exercise.kind]} · {position + 1} of{' '}
-                {lesson.exercises.length}
+                {questions.length}
               </p>
               <h2 ref={heading} tabIndex={-1}>
                 {exercise.instruction}
               </h2>
+              {stage === 'check' && (
+                <p className={styles.visitNote}>
+                  Try this before reading the rule. Your first answer stays
+                  recorded.
+                </p>
+              )}
+              {review && (
+                <p className={styles.visitNote}>
+                  These questions differ from the lesson set. Repeating this
+                  review set is further practice; it does not establish
+                  retention.
+                </p>
+              )}
               <p className={styles.question}>{exercise.prompt}</p>
               <form
                 onSubmit={(event) => {
@@ -279,15 +376,21 @@ export function GrammarRuleLesson({
                       ref={nextButton}
                       className={styles.primary}
                       onClick={() => {
-                        if (position + 1 < lesson.exercises.length) {
+                        if (position + 1 < questions.length) {
                           setPosition(position + 1);
                           setAnswer('');
-                        } else setStage('write');
+                        } else {
+                          setPosition(0);
+                          setAnswer('');
+                          setStage(stage === 'check' ? 'notice' : 'write');
+                        }
                       }}
                     >
-                      {position + 1 < lesson.exercises.length
+                      {position + 1 < questions.length
                         ? 'Next question'
-                        : 'Write your own'}{' '}
+                        : stage === 'check'
+                          ? 'See starting point'
+                          : 'Write your own'}{' '}
                       <ArrowRight size={16} />
                     </Button>
                   </div>
@@ -300,7 +403,9 @@ export function GrammarRuleLesson({
               <h2 ref={heading} tabIndex={-1}>
                 Use it in your own words
               </h2>
-              <p className={styles.prose}>{lesson.production.prompt}</p>
+              <p className={styles.prose}>
+                {review ? extra.writingPrompt : lesson.production.prompt}
+              </p>
               <div className={styles.answerInput}>
                 <label htmlFor="grammar-writing">Your Spanish</label>
                 <Textarea
@@ -352,6 +457,22 @@ export function GrammarRuleLesson({
               <h2 ref={heading} tabIndex={-1}>
                 Your practice evidence
               </h2>
+              <p className={styles.prose}>
+                {review ? 'Review set results' : 'Main practice results'}. First
+                answers remain recorded after feedback.
+              </p>
+              {startingScores(lesson, answers) && (
+                <p className={styles.visitNote}>
+                  Starting check (separate):{' '}
+                  {Object.entries(startingScores(lesson, answers)!)
+                    .filter(([, score]) => score.total > 0)
+                    .map(
+                      ([kind, score]) =>
+                        `${EVIDENCE_LABELS[kind as keyof typeof EVIDENCE_LABELS]} ${score.correct}/${score.total}`,
+                    )
+                    .join(' · ')}
+                </p>
+              )}
               <div className={styles.evidenceGrid}>
                 {Object.entries(scores).map(([kind, score]) => (
                   <div key={kind}>
@@ -373,7 +494,7 @@ export function GrammarRuleLesson({
                 accuracy and later retention have not been assessed.
               </p>
               <div className={styles.answerReview}>
-                {lesson.exercises.map((item) => (
+                {practice.map((item) => (
                   <div key={item.id}>
                     <h3>{item.prompt}</h3>
                     <p>
@@ -438,7 +559,7 @@ export function GrammarRuleLesson({
                     className={styles.secondary}
                     onClick={onBack}
                   >
-                    Return to curriculum
+                    {backLabel}
                   </Button>
                 )}
               </div>
@@ -456,7 +577,7 @@ export function GrammarRuleLesson({
                   variant="ghost"
                   className={styles.back}
                   onClick={() => {
-                    setStage('learn');
+                    setStage(firstStage);
                     setPosition(0);
                     setAnswer('');
                     setAnswers({});

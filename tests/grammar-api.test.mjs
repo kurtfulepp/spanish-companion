@@ -4,7 +4,7 @@ import { build } from 'esbuild';
 
 const bundled = await build({
   stdin: {
-    contents: `export { GET, POST } from './app/api/grammar/route'; export { setClient } from '@/lib/supabase/server'; export { GRAMMAR_RULES } from './lib/grammar-rules';`,
+    contents: `export { GET, POST } from './app/api/grammar/route'; export { setClient } from '@/lib/supabase/server'; export { GRAMMAR_RULES } from './lib/grammar-rules'; export { PAST_PRACTICE } from './lib/grammar-past-content';`,
     resolveDir: process.cwd(),
   },
   bundle: true,
@@ -26,7 +26,7 @@ const bundled = await build({
     },
   ],
 });
-const { GET, POST, setClient, GRAMMAR_RULES } = await import(
+const { GET, POST, setClient, GRAMMAR_RULES, PAST_PRACTICE } = await import(
   `data:text/javascript;base64,${Buffer.from(bundled.outputFiles[0].text).toString('base64')}`
 );
 const owner = '00000000-0000-4000-8000-000000000010';
@@ -157,4 +157,40 @@ test('storage failures never report a saved attempt', async () => {
   assert.equal(response.status, 503);
   assert.equal((await response.json()).attempt, undefined);
   assert.equal(rows.size, 0);
+});
+
+test('API saves and reloads separate check and review evidence without merging score keys', async () => {
+  const pathRule = GRAMMAR_RULES.find(
+    (item) => item.id === 'B1-02.earlier-past',
+  );
+  const extra = PAST_PRACTICE[pathRule.id];
+  for (const questions of [
+    [...pathRule.exercises, ...extra.check],
+    extra.revisit,
+  ]) {
+    setup({ level: 'B1' });
+    const body = {
+      ...payload(),
+      ruleId: pathRule.id,
+      version: pathRule.version,
+      answers: Object.fromEntries(
+        questions.map((item) => [item.id, item.answers[0]]),
+      ),
+      selfReview: pathRule.production.checklist.map(() => false),
+    };
+    const response = await POST(request(body));
+    assert.equal(response.status, 200);
+    const saved = (await response.json()).attempt;
+    const loaded = (await (await GET()).json()).attempts[0];
+    assert.deepEqual(loaded, saved);
+    const isReview = questions === extra.revisit;
+    assert.equal(loaded.mode, isReview ? 'revisit' : 'lesson');
+    assert.equal(!!loaded.checkScores, !isReview);
+    assert.equal(
+      Object.values(loaded.scores).reduce((sum, item) => sum + item.total, 0),
+      isReview ? 3 : 4,
+    );
+    setup({ level: 'A2' });
+    assert.equal((await POST(request(body))).status, 400);
+  }
 });

@@ -54,7 +54,7 @@ export default function JoinPage() {
         else if (error.code === 'over_email_send_rate_limit' || error.status === 429) setMessage('Too many attempts. Wait a few minutes before trying again.');
         else setMessage('Your account could not be created. Try again, or sign in if you already have an account.');
       } else if (data.session) {
-        window.location.replace('/vocabulary');
+        window.location.replace('/home');
       } else {
         setSubmitted(true);
         setPassword('');

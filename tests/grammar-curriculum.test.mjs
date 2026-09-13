@@ -45,7 +45,7 @@ test('the runtime catalog exactly preserves the adopted curriculum and its syste
 test('each rule has valid prerequisites, versioned identity and separate evidence tasks', () => {
   const levels = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
   assert.deepEqual(
-    GRAMMAR_RULES.map((rule) => rule.level),
+    [...new Set(GRAMMAR_RULES.map((rule) => rule.level))],
     levels,
   );
   for (const rule of GRAMMAR_RULES) {

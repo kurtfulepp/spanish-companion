@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowRight, BookOpen, ListFilter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { GrammarLearningPath } from '@/components/grammar-learning-path';
 import { GrammarRuleLesson } from '@/components/grammar-rule-lesson';
 import { GrammarSampleLesson } from '@/components/grammar-sample-lesson';
 import { CEFR_LEVELS, type CEFRLevel } from '@/lib/cefr';
@@ -22,6 +23,9 @@ export function GrammarCurriculum({ level }: { level: CEFRLevel }) {
   const [system, setSystem] = useState('all');
   const [query, setQuery] = useState('');
   const [availableOnly, setAvailableOnly] = useState(false);
+  const [lessonMode, setLessonMode] = useState<'lesson' | 'revisit'>('lesson');
+  const [fromPath, setFromPath] = useState(false);
+  const [returnToPath, setReturnToPath] = useState(false);
   const [active, setActive] = useState<string | null>(null);
   const [attempts, setAttempts] = useState<GrammarEvidence[]>([]);
   const [progressState, setProgressState] = useState<
@@ -75,7 +79,10 @@ export function GrammarCurriculum({ level }: { level: CEFRLevel }) {
     }
   }, [active]);
   function back() {
-    returnId.current = active;
+    returnId.current = fromPath ? null : active;
+    setReturnToPath(fromPath);
+    setFromPath(false);
+    setLessonMode('lesson');
     setActive(null);
   }
   function onSaved(attempt: GrammarEvidence) {
@@ -88,9 +95,13 @@ export function GrammarCurriculum({ level }: { level: CEFRLevel }) {
   if (rule)
     return (
       <GrammarRuleLesson
-        key={rule.id}
+        key={`${rule.id}:${lessonMode}`}
         lesson={rule}
-        previewOnly={previewOnly}
+        previewOnly={
+          CEFR_LEVELS.indexOf(rule.level) > CEFR_LEVELS.indexOf(level)
+        }
+        mode={lessonMode}
+        backLabel={fromPath ? 'Back to learning path' : 'Back to curriculum'}
         previous={attempts.find(
           (item) => item.ruleId === rule.id && item.version === rule.version,
         )}
@@ -153,6 +164,18 @@ export function GrammarCurriculum({ level }: { level: CEFRLevel }) {
         <span className={styles.heroCount}>A1–C2 curriculum · 87 modules</span>
       </section>
 
+      <GrammarLearningPath
+        level={level}
+        attempts={attempts}
+        progressState={progressState}
+        focusOnReturn={returnToPath}
+        onOpen={(ruleId, mode) => {
+          setFromPath(true);
+          setReturnToPath(false);
+          setLessonMode(mode);
+          setActive(ruleId);
+        }}
+      />
       <div className={styles.curriculumLayout}>
         <aside
           className={styles.catalogSidebar}
@@ -297,8 +320,8 @@ export function GrammarCurriculum({ level }: { level: CEFRLevel }) {
                   {viewLevel} curriculum
                 </h2>
                 <p>
-                  {levelModules.length} modules · {levelRules.length} rule
-                  lesson available
+                  {levelModules.length} modules · {levelRules.length} rule{' '}
+                  {levelRules.length === 1 ? 'lesson' : 'lessons'} available
                 </p>
               </div>
               <output className={styles.visitCount}>
@@ -384,6 +407,24 @@ export function GrammarCurriculum({ level }: { level: CEFRLevel }) {
                                       evidence.savedAt,
                                     ).toLocaleDateString()}
                                   </summary>
+                                  <p>
+                                    {evidence.mode === 'revisit'
+                                      ? 'Review set'
+                                      : 'Main practice'}{' '}
+                                    · first answers
+                                  </p>
+                                  {evidence.checkScores && (
+                                    <p>
+                                      Starting check (separate):{' '}
+                                      {Object.entries(evidence.checkScores)
+                                        .filter(([, score]) => score.total > 0)
+                                        .map(
+                                          ([kind, score]) =>
+                                            `${EVIDENCE_LABELS[kind as keyof typeof EVIDENCE_LABELS]} ${score.correct}/${score.total}`,
+                                        )
+                                        .join(' · ')}
+                                    </p>
+                                  )}
                                   <ul>
                                     {Object.entries(evidence.scores).map(
                                       ([kind, score]) => (

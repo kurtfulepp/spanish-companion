@@ -973,3 +973,106 @@
     scroll-behavior: auto !important;
   }
 }
+
+.learningPath {
+  margin: 20px 0;
+  padding: clamp(20px, 3vw, 32px);
+  border: 1px solid var(--brand-border);
+  border-radius: 26px;
+  background: var(--brand-surface, #fffdf8);
+  color: var(--brand-ink);
+}
+.learningPath > h2 {
+  font-size: clamp(24px, 3vw, 32px);
+  letter-spacing: -0.035em;
+  font-weight: 650;
+  margin: 6px 0 10px;
+}
+.learningPath p {
+  line-height: 1.6;
+}
+.pathSuggestion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px;
+  margin: 20px 0;
+  border-radius: 18px;
+  background: var(--brand-cream);
+}
+.pathSuggestion h3,
+.pathDescription h3 {
+  font-size: 17px;
+  font-weight: 650;
+}
+.pathSuggestion p {
+  margin-top: 6px;
+}
+.pathSuggestion button {
+  flex-shrink: 0;
+}
+.pathList {
+  list-style: none;
+  padding: 0;
+  margin: 20px 0;
+}
+.pathList > li {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 20px 0;
+  border-top: 1px solid var(--brand-border);
+}
+.pathNumber {
+  display: grid;
+  place-items: center;
+  flex: 0 0 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--brand-cream);
+  font-size: 14px;
+  font-weight: 650;
+}
+.pathDescription {
+  flex: 1;
+  min-width: 0;
+}
+.pathDescription > p {
+  margin: 5px 0;
+}
+.pathActions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+}
+@media (max-width: 760px) {
+  .pathSuggestion {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .pathList > li {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .pathActions {
+    margin-left: 42px;
+    align-items: flex-start;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .pathDescription {
+    flex-basis: calc(100% - 42px);
+  }
+  .steps {
+    flex-wrap: wrap;
+    row-gap: 10px;
+  }
+}
+
+.pathDetails > summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 12px 0;
+}

@@ -464,6 +464,8 @@ Do not estimate effort by counting the 87 module headings as 87 lessons. Size th
 | C2 register, concessions, compression                                     | C2-01/03, C2-08/10           | Replace recall-heavy checks with ambiguity, reformulation and editing evidence                      |
 | Four-question lessons with three choices per question; visit-only results | Early interaction proof only | Retain answer locking/retry behavior, add varied tasks and durable rule evidence                    |
 
+Implementation update, 12 September 2026: the first connected practice path now links seven focused rules from present-person agreement to integrated past narration, with separate starting checks, contextual practice, ungraded writing, and a review bank. Eleven rule lessons are available in total. This is partial curriculum coverage; independent teacher review and validated retention assessment remain pending. See [Grammar learning](grammar-learning.md) for the exact rule inventory and evidence behavior.
+
 ## 18. Teacher handoff and implementation decision
 
 The teacher receives this plan, the atomic-rule ledger when authored, source references, sample explanations, all acceptable-answer specifications, and a coverage report. Their review should be able to change a level placement or rule boundary without requiring a page redesign.
@@ -563,3 +565,9 @@ This index supplies the app’s grammar-type filters. A module may belong to sev
 | C2-10 | G09, G14 |
 | C2-11 | G07, G08, G15 |
 | C2-12 | G14, G15 |
+
+## Assessed vocabulary knowledge
+
+**Owner-adopted, 12 September 2026.** Vocabulary uses **Known / Needs practice**, determined from scored unassisted recall and contextual use. **Not assessed** is the absence of a usable result, including uncertainty, assistance, or a dispute; it is not a failing score. Self-ratings remain historical and never become assessed knowledge automatically. Accepted regional variants and equivalent expressions must be recognized, and feedback must isolate the target skill.
+
+Known is scoped to the expression and assessment at the exact active profile level. It does not establish broad CEFR proficiency, mastery, listening, or pronunciation. Recheck with fresh content after a delay to gather retention evidence. Preserve prior attempts when results change. AI assessments must be identified as such and allow a challenge that removes the disputed result from knowledge and gap counts. The first implementation is provisional and has not received independent teacher calibration; it must not drive high-confidence mastery, placement, or automatic level advancement. See [Vocabulary assessment](vocabulary-assessment.md) for the implementation and validation limits.

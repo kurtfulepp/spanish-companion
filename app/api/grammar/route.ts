@@ -1,7 +1,13 @@
 import { createClient } from '@/lib/supabase/server';
 import { isCEFRLevel } from '@/lib/cefr';
 import { GRAMMAR_RULES } from '@/lib/grammar-rules';
-import { scoreRule, validateGrammarSubmission } from '@/lib/grammar-evidence';
+import {
+  scoreRule,
+  validateGrammarSubmission,
+  validGrammarAnswers,
+  practiceMode,
+  startingScores,
+} from '@/lib/grammar-evidence';
 
 const reply = (body: unknown, status = 200) =>
   Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
@@ -43,16 +49,7 @@ export async function GET() {
           (item) =>
             item.id === row.rule_id && item.version === row.content_version,
         );
-        if (
-          !rule ||
-          !row.answers ||
-          typeof row.answers !== 'object' ||
-          Array.isArray(row.answers) ||
-          rule.exercises.some(
-            (exercise) => typeof row.answers[exercise.id] !== 'string',
-          )
-        )
-          return [];
+        if (!rule || !validGrammarAnswers(rule, row.answers)) return [];
         return [
           {
             attemptId: row.id,
@@ -60,6 +57,8 @@ export async function GET() {
             version: row.content_version,
             savedAt: row.created_at,
             scores: scoreRule(rule, row.answers),
+            mode: practiceMode(rule, row.answers),
+            checkScores: startingScores(rule, row.answers),
             writing: row.writing,
             selfReview: Array.isArray(row.self_review) ? row.self_review : [],
           },
@@ -185,6 +184,8 @@ export async function POST(request: Request) {
         version: stored.content_version,
         savedAt: stored.created_at,
         scores: scoreRule(rule, stored.answers),
+        mode: practiceMode(rule, stored.answers),
+        checkScores: startingScores(rule, stored.answers),
         writing: stored.writing,
         selfReview: stored.self_review,
       },

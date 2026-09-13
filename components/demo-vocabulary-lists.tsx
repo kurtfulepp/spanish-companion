@@ -84,9 +84,9 @@ export function DemoVocabularyLists() {
       </div></div>
       <h3><button className={styles.titleButton} onClick={() => setOpened(list)}>{list.name}</button></h3>
       <p>{list.cefrLevel ? `${list.cefrLevel} · ` : ''}{list.words.length} {list.words.length === 1 ? 'word' : 'words'}{list.completed ? ' · Fully learned' : ''}</p>
-      <p>{list.practicedCount ?? 0} practiced · {list.confidentCount ?? 0} confident</p>
+      <p>Assess your words to see what you know.</p>
       <p className={styles.sample}>{list.words.slice(0, 3).map((word) => word.english).join(' · ')}{list.words.length > 3 ? ' …' : ''}</p>
-      <a className={base.primaryButton} href={`/vocabulary/custom/${encodeURIComponent(list.id)}`}>Practice list</a>
+      <a className={base.primaryButton} href={`/vocabulary/custom/${encodeURIComponent(list.id)}`}>Assess list</a>
       <div className={styles.bottom}><button className={base.textButton} onClick={() => setOpened(list)}>Open list</button>{list.source !== 'photo' && <span>FPO DATA</span>}</div>
     </article>;
   }
@@ -101,7 +101,7 @@ export function DemoVocabularyLists() {
     {completed.length > 0 && <details className={styles.archive}><summary>Completed ({completed.length})</summary><p>Fully learned lists. Restore one whenever you want to revisit it.</p><div className={styles.grid}>{completed.map(tile)}</div></details>}
     <Dialog open={Boolean(opened)} onOpenChange={(open) => { if (!open) setOpened(null); }}>
       <DialogContent className={styles.dialog}><DialogTitle className={styles.dialogTitle}>{opened?.name}</DialogTitle><DialogDescription>{opened?.source !== 'photo' ? 'FPO DATA · ' : ''}{opened?.words.length} words · {opened?.completed ? 'Fully learned' : 'Saved to your profile'}</DialogDescription>
-        <a className={base.primaryButton} href={opened ? `/vocabulary/custom/${encodeURIComponent(opened.id)}` : undefined}>Practice list</a>
+        <a className={base.primaryButton} href={opened ? `/vocabulary/custom/${encodeURIComponent(opened.id)}` : undefined}>Assess list</a>
         <div className={styles.wordScroll}><table><thead><tr><th>English</th><th>Spanish</th></tr></thead><tbody>{opened?.words.map((word, index) => <tr key={index}><td>{word.english}</td><td lang="es">{word.spanish}</td></tr>)}</tbody></table></div>
       </DialogContent>
     </Dialog>
