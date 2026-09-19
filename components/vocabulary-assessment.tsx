@@ -5,8 +5,10 @@ import { ArrowLeft, ArrowRight, Check, RotateCcw } from 'lucide-react';
 import { useLearnerProfile } from './learner-profile-provider';
 import { PracticeTimeTracker } from './practice-time-tracker';
 import { AnswerDifference } from './answer-difference';
+import { VocabularyStatusBadge } from './vocabulary-status-badge';
 import {
   assessmentQueue,
+  vocabularyLearningState,
   type AssessmentScope,
   type AssessmentCatalog,
   type AssessmentChallenge,
@@ -248,13 +250,20 @@ function AssessmentSession({
       );
     });
   }
-  const known =
-    catalog?.items.filter((item) => item.status === 'known').length ?? 0;
-  const needs =
-    catalog?.items.filter((item) => item.status === 'needs_practice').length ??
-    0;
-  const ready =
-    catalog?.items.filter((item) => item.status === 'not_assessed').length ?? 0;
+  const learningStates =
+    catalog?.items.map((item) => vocabularyLearningState(item, now)) ?? [];
+  const newCount = learningStates.filter((state) => state === 'new').length;
+  const practiced = learningStates.filter(
+    (state) => state === 'practiced',
+  ).length;
+  const known = learningStates.filter((state) => state === 'known').length;
+  const retained = learningStates.filter(
+    (state) => state === 'retained',
+  ).length;
+  const due = learningStates.filter((state) => state === 'review_due').length;
+  const needs = learningStates.filter(
+    (state) => state === 'needs_practice',
+  ).length;
   const next = catalog
     ? (assessmentQueue(catalog.items, now).find(
         (item) => item.id === targetId,
@@ -263,17 +272,17 @@ function AssessmentSession({
   const statusLabel =
     result?.mode === 'practice'
       ? result.recall.verdict === 'correct'
-        ? 'Practice complete'
+        ? 'Practiced'
         : result.recall.verdict === 'correct_with_fix'
-          ? 'Correct — small fix'
+          ? 'Practiced — small fix'
           : result.recall.verdict === 'incorrect'
             ? 'Needs practice'
-            : 'Review needed'
+            : 'Needs another check'
       : result?.status === 'known'
         ? 'Known'
         : result?.status === 'needs_practice'
           ? 'Needs practice'
-          : 'Not assessed';
+          : 'Needs another check';
   return (
     <section className={styles.panel} aria-busy={busy || preparing}>
       <PracticeTimeTracker
@@ -327,13 +336,22 @@ function AssessmentSession({
           </p>
           <div className={styles.counts}>
             <div>
+              <strong>{newCount}</strong>New
+            </div>
+            <div>
+              <strong>{practiced}</strong>Practiced
+            </div>
+            <div>
               <strong>{known}</strong>Known
+            </div>
+            <div>
+              <strong>{retained}</strong>Retained
             </div>
             <div>
               <strong>{needs}</strong>Needs practice
             </div>
             <div>
-              <strong>{ready}</strong>Not assessed
+              <strong>{due}</strong>Review due
             </div>
           </div>
           <p className={styles.note}>
@@ -367,16 +385,14 @@ function AssessmentSession({
                 <span>
                   <strong>{item.english}</strong>
                   <small>
-                    {item.status === 'known'
-                      ? 'Known'
-                      : item.status === 'needs_practice'
-                        ? 'Needs practice'
-                        : 'Not assessed'}
-                    {item.latest?.disputed ? ' · Result challenged' : ''}
-                    {item.latest?.status === 'known' &&
-                    Date.parse(item.latest.reviewAt) <= now
-                      ? ' · Due for review'
-                      : ''}
+                    <VocabularyStatusBadge
+                      state={vocabularyLearningState(item, now)}
+                    />
+                    {item.latest?.disputed && (
+                      <span className={styles.historyNote}>
+                        Result challenged
+                      </span>
+                    )}
                   </small>
                 </span>
                 <button

@@ -1,7 +1,9 @@
 import type {
   AssessmentCatalog,
   AssessmentItem,
+  VocabularyLearningState,
 } from './vocabulary-assessment';
+import { vocabularyLearningState } from './vocabulary-assessment';
 
 export type VocabularyLearningSet = {
   id: string;
@@ -18,12 +20,7 @@ export type LearningPathItem = {
   curriculum_position: number | null;
 };
 
-export type LearningPathState =
-  | 'new'
-  | 'learning'
-  | 'known'
-  | 'due'
-  | 'retained';
+export type LearningPathState = VocabularyLearningState;
 
 export type LearningPathEntry<T extends LearningPathItem> = T & {
   assessment: AssessmentItem | null;
@@ -32,6 +29,7 @@ export type LearningPathEntry<T extends LearningPathItem> = T & {
 
 export type VocabularySetProgress = VocabularyLearningSet & {
   checkedCount: number;
+  practicedCount: number;
   knownCount: number;
   retainedCount: number;
 };
@@ -41,12 +39,14 @@ export type LearningPathSummary<T extends LearningPathItem> = {
   activeSet: VocabularySetProgress | null;
   newItems: LearningPathEntry<T>[];
   learning: LearningPathEntry<T>[];
+  practiced: LearningPathEntry<T>[];
   due: LearningPathEntry<T>[];
   known: LearningPathEntry<T>[];
   retained: LearningPathEntry<T>[];
   setProgress: VocabularySetProgress[];
   knownCount: number;
   retainedCount: number;
+  checkedCount: number;
   allRetained: boolean;
 };
 
@@ -60,10 +60,7 @@ export function learningPathState(
   assessment: AssessmentItem | null,
   now = Date.now(),
 ): LearningPathState {
-  if (!assessment?.latest || assessment.status === 'not_assessed') return 'new';
-  if (assessment.status === 'needs_practice') return 'learning';
-  if (Date.parse(assessment.latest.reviewAt) <= now) return 'due';
-  return assessment.latest.retained ? 'retained' : 'known';
+  return vocabularyLearningState(assessment, now);
 }
 
 export function buildLearningPath<T extends LearningPathItem>(
@@ -110,10 +107,15 @@ export function buildLearningPath<T extends LearningPathItem>(
       );
       return {
         ...set,
-        checkedCount: setEntries.filter((entry) => entry.state !== 'new')
-          .length,
+        checkedCount: setEntries.filter(
+          (entry) =>
+            entry.assessment && entry.assessment.status !== 'not_assessed',
+        ).length,
+        practicedCount: setEntries.filter(
+          (entry) => entry.state === 'practiced',
+        ).length,
         knownCount: setEntries.filter((entry) =>
-          ['known', 'due', 'retained'].includes(entry.state),
+          ['known', 'review_due', 'retained'].includes(entry.state),
         ).length,
         retainedCount: setEntries.filter((entry) => entry.state === 'retained')
           .length,
@@ -129,12 +131,16 @@ export function buildLearningPath<T extends LearningPathItem>(
         )
       : []
     : entries.filter((entry) => entry.state === 'new');
-  const learning = entries.filter((entry) => entry.state === 'learning');
-  const due = entries.filter((entry) => entry.state === 'due');
+  const learning = entries.filter((entry) => entry.state === 'needs_practice');
+  const practiced = entries.filter((entry) => entry.state === 'practiced');
+  const due = entries.filter((entry) => entry.state === 'review_due');
   const known = entries.filter((entry) => entry.state === 'known');
   const retained = entries.filter((entry) => entry.state === 'retained');
   const knownCount = entries.filter((entry) =>
-    ['known', 'due', 'retained'].includes(entry.state),
+    ['known', 'review_due', 'retained'].includes(entry.state),
+  ).length;
+  const checkedCount = entries.filter(
+    (entry) => entry.assessment && entry.assessment.status !== 'not_assessed',
   ).length;
 
   return {
@@ -142,12 +148,14 @@ export function buildLearningPath<T extends LearningPathItem>(
     activeSet,
     newItems,
     learning,
+    practiced,
     due,
     known,
     retained,
     setProgress,
     knownCount,
     retainedCount: retained.length,
+    checkedCount,
     allRetained:
       entries.length > 0 &&
       retained.length === entries.length &&
@@ -172,16 +180,24 @@ export function buildLearningSession<T extends LearningPathItem>(
     }
   };
 
-  // Keep reviews present without allowing them to consume the entire session
-  // while the learner still has new curriculum to introduce.
+  // Keep checks and reviews present without allowing them to consume the
+  // entire session while the learner still has new curriculum to introduce.
   add(summary.due, Math.min(2, size));
-  add(summary.learning, Math.min(2, Math.max(0, size - items.length)));
+  add(
+    summary.learning,
+    Math.min(summary.newItems.length > 0 ? 1 : 2, size - items.length),
+  );
+  add(
+    summary.practiced,
+    Math.min(summary.newItems.length > 0 ? 1 : size, size - items.length),
+  );
   add(summary.newItems, size - items.length);
 
   // Once the current set has no new items, use the remaining capacity for
   // additional review work.
   if (items.length < size) add(summary.due, size - items.length);
   if (items.length < size) add(summary.learning, size - items.length);
+  if (items.length < size) add(summary.practiced, size - items.length);
 
   return {
     items,
@@ -191,7 +207,7 @@ export function buildLearningSession<T extends LearningPathItem>(
     ),
     practiceRemaining: Math.max(
       0,
-      [...summary.due, ...summary.learning].filter(
+      [...summary.due, ...summary.learning, ...summary.practiced].filter(
         (item) => !selected.has(item.id),
       ).length,
     ),

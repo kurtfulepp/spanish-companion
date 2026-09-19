@@ -84,6 +84,8 @@ Make corrections scan like actions. Label the correction **Fix** and the replace
 
 Use one shared visual state rule for learning feedback: correct is a restrained turquoise-tinted surface, incorrect is a restrained coral/red-tinted surface, and uncertain or review-needed is the only state that uses warm gold. **Correct — small fix** retains the turquoise success surface and uses a compact gold repair label inside it. Never use the same gold/yellow result surface for both correct and incorrect. Color reinforces a visible text label and never carries the result alone. Apply this to Vocabulary, Grammar, Conversation reviews, and guided lessons; binary activities do not invent a small-fix state.
 
+Vocabulary uses one persistent learning-state ladder across every topic and custom list: **New → Practiced → Known → Retained**. **Needs practice** and **Review due** are action states beside that ladder, not higher achievement levels. New means no saved attempt and uses a neutral stone chip. Practiced means an assisted attempt was saved but independent evidence is still required; use a pale-gold chip. Known uses a light turquoise chip. Retained uses a stronger teal chip. Needs practice uses coral/red. Review due uses a white chip with a gold border. Every chip includes its text and a Lucide icon so color is never the only signal. Do not collapse saved practice back into New, and do not call assisted practice Known.
+
 ## Extending the system
 
 Before designing, read this file and the relevant implemented vocabulary screen. Reuse its tokens, components, and registered artwork. Do not treat the latest generated mockup as a new source of truth. New explicit user feedback supersedes this document; record the correction here and in the shared implementation as part of the same change.
@@ -110,7 +112,7 @@ The public kitchen simulation and its entry links are retired. The photo review 
 
 ## Custom-list practice
 
-Custom list tiles and their word dialogs link to “Assess list”. Use the same scored recall and contextual-use flow as topic vocabulary. Show Known, Needs practice, and Not assessed, with an AI-assessed explanation and a visible challenge action. Retain historical self-ratings and manual archive/restore as separate account history; do not display old confident counts as assessed knowledge or auto-archive a list from one successful check.
+Custom list tiles and their word dialogs link to “Assess list”. Use the same scored recall and contextual-use flow and the same New, Practiced, Known, Review due, Retained, and Needs practice states as topic vocabulary. Keep the AI-assessed explanation and visible challenge action. Retain historical self-ratings and manual archive/restore as separate account history; do not display old confident counts as assessed knowledge or auto-archive a list from one successful check.
 
 ## Level-personalized learning
 

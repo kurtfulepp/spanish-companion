@@ -40,6 +40,13 @@ export type AssessmentItem = {
   status: AssessmentStatus;
   latest: AssessmentResult | null;
 };
+export type VocabularyLearningState =
+  | 'new'
+  | 'practiced'
+  | 'needs_practice'
+  | 'known'
+  | 'review_due'
+  | 'retained';
 export type AssessmentCatalog = {
   title: string;
   level: CEFRLevel;
@@ -64,14 +71,44 @@ export function assessmentStatus(
     ? 'known'
     : 'not_assessed';
 }
+export function vocabularyLearningState(
+  item: AssessmentItem | null,
+  now = Date.now(),
+): VocabularyLearningState {
+  if (!item?.latest) return 'new';
+  if (
+    item.status === 'needs_practice' ||
+    (item.latest.mode === 'practice' &&
+      item.latest.recall.verdict === 'incorrect')
+  )
+    return 'needs_practice';
+  if (item.status === 'not_assessed') return 'practiced';
+  if (Date.parse(item.latest.reviewAt) <= now) return 'review_due';
+  return item.latest.retained ? 'retained' : 'known';
+}
+export function vocabularyLearningStateLabel(state: VocabularyLearningState) {
+  return state === 'new'
+    ? 'New'
+    : state === 'practiced'
+      ? 'Practiced'
+      : state === 'needs_practice'
+        ? 'Needs practice'
+        : state === 'known'
+          ? 'Known'
+          : state === 'review_due'
+            ? 'Review due'
+            : 'Retained';
+}
 export function assessmentQueue(items: AssessmentItem[], now = Date.now()) {
+  const order: Record<VocabularyLearningState, number> = {
+    needs_practice: 0,
+    review_due: 1,
+    practiced: 2,
+    new: 3,
+    known: 4,
+    retained: 5,
+  };
   const priority = (item: AssessmentItem) =>
-    item.status === 'needs_practice'
-      ? 0
-      : item.status === 'not_assessed'
-        ? 1
-        : item.latest && Date.parse(item.latest.reviewAt) <= now
-          ? 2
-          : 3;
+    order[vocabularyLearningState(item, now)];
   return [...items].sort((a, b) => priority(a) - priority(b));
 }

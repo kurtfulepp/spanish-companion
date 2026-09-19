@@ -45,22 +45,49 @@ const result = (id, status, retained = false, reviewAt = '2099-01-01') => ({
   latest:
     status === 'not_assessed'
       ? null
-      : { status, retained, reviewAt: `${reviewAt}T00:00:00.000Z` },
+      : {
+          status,
+          retained,
+          reviewAt: `${reviewAt}T00:00:00.000Z`,
+          mode: 'check',
+          recall: {
+            verdict: status === 'needs_practice' ? 'incorrect' : 'correct',
+          },
+        },
+});
+const practicedResult = (id, verdict = 'correct') => ({
+  id,
+  key: id,
+  english: id,
+  spanish: id,
+  status: 'not_assessed',
+  latest: {
+    status: 'not_assessed',
+    retained: false,
+    reviewAt: '2099-01-01T00:00:00.000Z',
+    mode: 'practice',
+    recall: { verdict },
+  },
 });
 const catalog = (...results) => ({ items: results });
 
 test('uses evidence and due dates for learner-facing states', () => {
   const now = Date.parse('2026-09-13T12:00:00.000Z');
   assert.equal(learningPathState(null, now), 'new');
+  assert.equal(learningPathState(practicedResult('a'), now), 'practiced');
   assert.equal(
     learningPathState(result('a', 'needs_practice'), now),
-    'learning',
+    'needs_practice',
+  );
+  assert.equal(
+    learningPathState(practicedResult('a', 'incorrect'), now),
+    'needs_practice',
   );
   assert.equal(learningPathState(result('a', 'known'), now), 'known');
   assert.equal(learningPathState(result('a', 'known', true), now), 'retained');
   assert.equal(
     learningPathState(result('a', 'known', true, '2026-09-12'), now),
-    'due',
+    'review_due',
   );
 });
 
@@ -75,6 +102,18 @@ test('advances after every expression in the current set has an independent resu
     first.newItems.map((item) => item.id),
     ['item-2'],
   );
+  const practiced = buildLearningPath(
+    items,
+    sets,
+    catalog(result('item-1', 'known'), practicedResult('item-2')),
+  );
+  assert.equal(practiced.activeSet.id, 'set-1');
+  assert.deepEqual(
+    practiced.practiced.map((item) => item.id),
+    ['item-2'],
+  );
+  assert.equal(practiced.setProgress[0].checkedCount, 1);
+  assert.equal(practiced.setProgress[0].practicedCount, 1);
   const second = buildLearningPath(
     items,
     sets,
@@ -132,6 +171,7 @@ test('builds a six-item session that mixes reviews with new curriculum', () => {
       result('session-4', 'needs_practice'),
       result('session-5', 'needs_practice'),
       result('session-6', 'needs_practice'),
+      practicedResult('session-7'),
     ),
   );
   const session = buildLearningSession(summary);
@@ -143,9 +183,9 @@ test('builds a six-item session that mixes reviews with new curriculum', () => {
       'session-1',
       'session-2',
       'session-4',
-      'session-5',
       'session-7',
       'session-8',
+      'session-3',
     ],
   );
   assert.equal(session.newRemaining, 0);

@@ -1,0 +1,62 @@
+.badge {
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--brand-border);
+  border-radius: 999px;
+  padding: 3px 9px;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.badge[data-state='new'] {
+  background: #f3eee6;
+  color: var(--brand-ink-muted);
+}
+
+.badge[data-state='practiced'] {
+  border-color: color-mix(
+    in srgb,
+    var(--brand-flag-gold) 62%,
+    var(--brand-border)
+  );
+  background: var(--brand-cream);
+  color: var(--brand-ink);
+}
+
+.badge[data-state='needs_practice'] {
+  border-color: color-mix(
+    in srgb,
+    var(--brand-flag-red) 45%,
+    var(--brand-border)
+  );
+  background: #fff1ed;
+  color: #8b4337;
+}
+
+.badge[data-state='known'] {
+  border-color: color-mix(
+    in srgb,
+    var(--brand-turquoise) 58%,
+    var(--brand-border)
+  );
+  background: color-mix(in srgb, var(--brand-turquoise) 16%, white);
+  color: #245e59;
+}
+
+.badge[data-state='review_due'] {
+  border-color: var(--brand-flag-gold);
+  background: white;
+  color: var(--brand-ink-strong);
+}
+
+.badge[data-state='retained'] {
+  border-color: #245e59;
+  background: #245e59;
+  color: white;
+}

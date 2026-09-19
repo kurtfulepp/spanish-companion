@@ -13,12 +13,14 @@ import {
 } from 'lucide-react';
 import { SpeechButton } from '@/components/speech-button';
 import { TimedSpeechExpression } from '@/components/timed-speech-expression';
+import { VocabularyStatusBadge } from '@/components/vocabulary-status-badge';
 import type { CEFRLevel } from '@/lib/cefr';
 import type { VoicePreference } from '@/lib/speech';
 import type { AssessmentCatalog } from '@/lib/vocabulary-assessment';
 import {
   buildLearningPath,
   buildLearningSession,
+  type LearningPathState,
   type VocabularyLearningSet,
 } from '@/lib/vocabulary-learning-path';
 
@@ -41,14 +43,6 @@ export type VocabularyTopicPathItem = {
   curriculum_role: 'core' | 'review' | null;
   introduced_level: CEFRLevel | null;
 };
-
-const statusCopy = {
-  new: 'New',
-  learning: 'Needs practice',
-  known: 'Known',
-  due: 'Due for review',
-  retained: 'Retained',
-} as const;
 
 export function VocabularyTopicLearningPath({
   themeId,
@@ -120,9 +114,7 @@ export function VocabularyTopicLearningPath({
   );
   const session = useMemo(() => buildLearningSession(path), [path]);
   const total = path.entries.length;
-  const checkedCount = path.entries.filter(
-    (item) => item.state !== 'new',
-  ).length;
+  const checkedCount = path.checkedCount;
   const progress = total ? Math.round((checkedCount / total) * 100) : 0;
   const browseGroups = useMemo(() => {
     const groups = new Map<
@@ -215,9 +207,10 @@ export function VocabularyTopicLearningPath({
                   : `Create a personal set of ${level} expressions across this topic's six moments.`}
               </p>
             </div>
-            <div className="grid min-w-[280px] grid-cols-3 gap-2 text-center">
+            <div className="grid min-w-[280px] grid-cols-2 gap-2 text-center sm:grid-cols-4">
               <Metric value={total} label="Total" />
-              <Metric value={path.knownCount} label="Known" />
+              <Metric value={path.practiced.length} label="Practiced" />
+              <Metric value={path.known.length} label="Known" />
               <Metric value={path.retainedCount} label="Retained" />
             </div>
           </div>
@@ -230,7 +223,8 @@ export function VocabularyTopicLearningPath({
                 />
               </div>
               <p className="mt-2 text-xs font-medium text-[var(--brand-ink-muted)]">
-                {checkedCount}/{total} checked · retention is confirmed by a
+                {checkedCount}/{total} independently checked ·{' '}
+                {path.practiced.length} practiced · retention is confirmed by a
                 later independent review
               </p>
             </>
@@ -276,7 +270,7 @@ export function VocabularyTopicLearningPath({
                     </p>
                     <p className="mt-1 text-xs text-[var(--brand-ink-muted)]">
                       {set.checkedCount}/{set.item_count} checked ·{' '}
-                      {set.knownCount} known
+                      {set.practicedCount} practiced · {set.knownCount} known
                     </p>
                   </div>
                 );
@@ -357,7 +351,7 @@ export function VocabularyTopicLearningPath({
                     </h2>
                     <p className="mt-1 text-sm text-[var(--brand-ink-muted)]">
                       {path.activeSet
-                        ? `${path.activeSet.description} Earlier gaps are mixed in without taking over the session.`
+                        ? `${path.activeSet.description} Earlier checks and gaps are mixed in without taking over the session.`
                         : session.newRemaining > 0
                           ? 'Learn the available expressions. Earlier gaps are mixed in without taking over the session.'
                           : 'All available expressions have been introduced. This session focuses on due reviews and identified gaps.'}
@@ -371,8 +365,11 @@ export function VocabularyTopicLearningPath({
                     )}
                     {session.practiceRemaining > 0 && (
                       <p>
-                        {session.practiceRemaining} reviews remain after this
-                        session
+                        {session.practiceRemaining}{' '}
+                        {session.practiceRemaining === 1
+                          ? 'check or review remains'
+                          : 'checks and reviews remain'}{' '}
+                        after this session
                       </p>
                     )}
                   </div>
@@ -445,7 +442,7 @@ function ExpressionBrowser({
     sort: number;
     items: Array<
       VocabularyTopicPathItem & {
-        state: keyof typeof statusCopy;
+        state: LearningPathState;
       }
     >;
   }>;
@@ -496,9 +493,7 @@ function ExpressionBrowser({
                       <p className="font-semibold leading-snug text-[var(--brand-ink)]">
                         {item.spanish}
                       </p>
-                      <span className="rounded-full bg-[var(--brand-cream)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[.06em] text-[var(--brand-ink-muted)]">
-                        {statusCopy[item.state]}
-                      </span>
+                      <VocabularyStatusBadge state={item.state} />
                     </div>
                     <p className="mt-1 text-sm text-[var(--brand-ink-muted)]">
                       {item.english}
@@ -527,7 +522,7 @@ function PromptCard({
   onAssess,
 }: {
   item: VocabularyTopicPathItem & {
-    state: keyof typeof statusCopy;
+    state: LearningPathState;
   };
   voice: VoicePreference;
   revealed: boolean;
@@ -537,16 +532,14 @@ function PromptCard({
   const [variation, setVariation] = useState('');
   const [variationOpen, setVariationOpen] = useState(false);
   const [compared, setCompared] = useState(false);
-  const needsLearning = item.state === 'new' || item.state === 'learning';
+  const needsLearning = item.state === 'new' || item.state === 'needs_practice';
 
   return (
     <article className="rounded-[20px] border border-[var(--brand-border)] bg-white p-4 shadow-[0_7px_22px_rgba(48,51,38,.055)] sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="flex flex-wrap gap-1.5">
-            <span className="rounded-full bg-[var(--brand-peach)] px-2.5 py-1 text-[11px] font-bold uppercase tracking-[.06em] text-[var(--brand-ink)]">
-              {statusCopy[item.state]}
-            </span>
+            <VocabularyStatusBadge state={item.state} />
             {item.curriculum_role === 'review' && item.introduced_level && (
               <span className="rounded-full bg-[#f3eee6] px-2.5 py-1 text-[11px] font-bold uppercase tracking-[.06em] text-[var(--brand-ink-muted)]">
                 {item.introduced_level} foundation
@@ -578,10 +571,14 @@ function PromptCard({
       ) : (
         <p className="mt-3 text-xs text-[var(--brand-ink-muted)]">
           {needsLearning
-            ? item.state === 'learning'
+            ? item.state === 'needs_practice'
               ? 'Review the expression, then practice it again.'
               : 'Learn the expression, then practice recalling it.'
-            : 'Complete an independent check, or review the expression first.'}
+            : item.state === 'review_due'
+              ? 'This expression is due for a fresh independent review.'
+              : item.state === 'practiced'
+                ? 'You have practiced this expression. Check it without viewing the answer.'
+                : 'Complete an independent check, or review the expression first.'}
         </p>
       )}
 
@@ -666,7 +663,7 @@ function PromptCard({
           className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-full bg-[var(--brand-flag-gold)] px-4 text-sm font-bold text-[var(--brand-ink)] hover:brightness-[.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-ink-strong)]"
         >
           <BookOpen className="size-4" />
-          {item.state === 'learning' ? 'Learn again' : 'Learn expression'}
+          {item.state === 'needs_practice' ? 'Learn again' : 'Learn expression'}
         </button>
       ) : (
         <div className="mt-4 flex flex-wrap gap-2">
@@ -676,7 +673,7 @@ function PromptCard({
             className="inline-flex min-h-10 items-center gap-2 rounded-full bg-[var(--brand-flag-gold)] px-4 text-sm font-bold text-[var(--brand-ink)] hover:brightness-[.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-ink-strong)]"
           >
             <Check className="size-4" />
-            Check now
+            {item.state === 'review_due' ? 'Review now' : 'Check now'}
           </button>
           <button
             type="button"
