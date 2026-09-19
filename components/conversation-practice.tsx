@@ -8,10 +8,10 @@ import {
   Check,
   LoaderCircle,
   LockKeyhole,
-  MessageCircle,
   Send,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { LearningLevelBadge } from '@/components/learning-level-badge';
 import { Textarea } from '@/components/ui/textarea';
 import {
   AlertDialog,
@@ -267,10 +267,7 @@ export function ConversationPractice({
         level={level}
       />
       <section className={`brand-hero ${styles.hero}`}>
-        <p className={styles.eyebrow}>
-          <MessageCircle size={16} />
-          {level} conversation · First version
-        </p>
+        <LearningLevelBadge level={level} area="Conversation" />
         <h1>
           {session
             ? session.scenario.title

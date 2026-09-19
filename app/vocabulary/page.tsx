@@ -2,7 +2,8 @@
 /* oxlint-disable next/no-html-link-for-pages, next/no-img-element */
 
 import { useCallback, useEffect, useState } from 'react';
-import { ArrowRight, BookOpen, Camera, Sparkles, Upload } from 'lucide-react';
+import { ArrowRight, BookOpen, Camera, Upload } from 'lucide-react';
+import { LearningLevelBadge } from '@/components/learning-level-badge';
 import { DemoVocabularyLists } from '@/components/demo-vocabulary-lists';
 import { VocabularyHeader } from '@/components/vocabulary-header';
 import { createClient } from '@/lib/supabase/client';
@@ -60,12 +61,10 @@ export default function VocabularyPage() {
         <span className="brand-orbit brand-orbit-yellow" aria-hidden="true" />
         <div className="relative flex min-h-[158px] flex-col justify-between gap-6 px-6 py-6 sm:flex-row sm:items-center sm:px-8 lg:px-10">
           <div className="max-w-4xl">
-            <span className="inline-flex items-center gap-2 rounded-full bg-[#8e2f32]/28 px-3 py-1 text-xs font-bold uppercase tracking-[.08em] text-white">
-              <Sparkles className="size-3.5" />
-              {profile.proficiencyLevel
-                ? `${profile.proficiencyLevel} vocabulary`
-                : 'Vocabulary'}
-            </span>
+            <LearningLevelBadge
+              level={profileLoading ? '' : profile.proficiencyLevel}
+              area="Vocabulary"
+            />
             <h1 className="mt-3 font-heading text-[clamp(2rem,4vw,3.35rem)] font-semibold leading-[.95] tracking-[-.055em]">
               Select a theme or create your own
             </h1>

@@ -54,6 +54,14 @@ The Sign in screen uses the coral-to-marigold brand treatment rather than a dark
 
 Profile avatars use a visible 2px colored ring, including image and initials fallbacks. Use the shared `--brand-avatar-border` token (brand gold) and `.profile-avatar-button` styling across headers. Retain a separate, offset keyboard-focus outline so the decorative border is not mistaken for focus.
 
+## Learning-page level badge
+
+**Owner-approved, 19 September 2026.** Vocabulary, Grammar, and Conversation use `LearningLevelBadge` (`components/learning-level-badge.tsx`) with the shared `.brand-level-badge` style in `app/design-system.css`. Use the format **B2 · Vocabulary**, **B2 · Grammar**, or **B2 · Conversation** in a cream pill with dark terracotta text, 14px semibold type, 6px vertical / 12px horizontal padding, and no decorative icon or version information. Place it above the page heading with a consistent 12px gap; retain the same treatment on mobile.
+
+The badge is read-only and identifies the exact active profile level, including an explicit “Profile level” prefix for screen readers. Change the level through Profile. Never substitute the browsed curriculum level: a B2 profile browsing C1 still shows **B2 · Grammar**, while the browsed content is labeled **C1 · Curriculum preview**. Earlier-level review also stays labeled in the content. While the profile is loading or has no level, show only the area name and retain the existing level-selection flow; do not invent a default level.
+
+Use the shared component instead of local badge styling. The navigation header and Home's dedicated Level tile keep their existing roles.
+
 ## Creation actions
 
 The photo creation panel headline is “CREATE YOUR OWN”, followed by “Upload a photo to create a custom theme to enhance your vocabulary.” Omit the former eyebrow and “Photo vocabulary” heading in this panel. Retain the existing action buttons.

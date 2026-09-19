@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowRight, BookOpen, ListFilter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { LearningLevelBadge } from '@/components/learning-level-badge';
 import { GrammarLearningPath } from '@/components/grammar-learning-path';
 import { GrammarRuleLesson } from '@/components/grammar-rule-lesson';
 import { GrammarSampleLesson } from '@/components/grammar-sample-lesson';
@@ -155,7 +156,7 @@ export function GrammarCurriculum({ level }: { level: CEFRLevel }) {
         />
         <span className="brand-orbit brand-orbit-yellow" aria-hidden="true" />
         <div>
-          <span className={styles.heroLabel}>{level} grammar</span>
+          <LearningLevelBadge level={level} area="Grammar" />
           <h1>Your grammar curriculum</h1>
           <p className={styles.heroDescription}>
             Explore the rules. Practice their form and meaning.

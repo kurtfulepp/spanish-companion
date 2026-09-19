@@ -28,6 +28,22 @@
 }
 
 .brand-hero { position:relative; isolation:isolate; overflow:hidden; border-radius:var(--brand-radius-hero); background:var(--brand-hero-fill); color:white; box-shadow:var(--brand-hero-shadow); }
+.brand-level-badge {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  max-width: 100%;
+  padding: 0.375rem 0.75rem;
+  border-radius: 999px;
+  background: var(--brand-cream);
+  color: var(--brand-ink-strong);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.25rem;
+  letter-spacing: normal;
+  text-transform: none;
+}
 .brand-orbit { position:absolute; z-index:-1; width:10rem; height:10rem; border-radius:50%; pointer-events:none; }
 .brand-orbit-turquoise { right:-2rem; top:-4rem; background:var(--brand-turquoise); opacity:.45; }
 .brand-orbit-yellow { right:6rem; bottom:-5rem; background:var(--brand-yellow); opacity:.55; }
