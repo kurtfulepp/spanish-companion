@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { requireSupabaseConfig } from '@/lib/supabase/config';
+import { hasAdminPrivilege } from '@/lib/admin-access';
 
 function addSecurityHeaders(response: NextResponse, allowCamera = false) {
   response.headers.set(
@@ -56,6 +57,26 @@ export async function updateSession(request: NextRequest) {
     url.pathname = '/';
     url.search = '';
     return redirectWithSession(url);
+  }
+
+  const path = request.nextUrl.pathname;
+  const isAdminPage = path === '/admin' || path.startsWith('/admin/');
+  const isAdminApi = path === '/api/admin' || path.startsWith('/api/admin/');
+  if (isAdminPage || isAdminApi) {
+    let permitted = false;
+    try {
+      const { data: current, error } = await supabase.auth.getUser();
+      permitted = !error && hasAdminPrivilege(current.user);
+    } catch { /* Deny if Supabase cannot verify the current privilege. */ }
+    if (!permitted) {
+      const denied = isAdminApi
+        ? NextResponse.json({ error: 'Admin access required' }, { status: 403 })
+        : new NextResponse('Not found', { status: 404 });
+      denied.headers.set('Cache-Control', 'private, no-store');
+      response.cookies.getAll().forEach(cookie => denied.cookies.set(cookie));
+      return addSecurityHeaders(denied);
+    }
+    response.headers.set('Cache-Control', 'private, no-store');
   }
 
   // Join always opens account creation; Sign in may reuse a valid session.

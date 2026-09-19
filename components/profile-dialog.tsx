@@ -14,6 +14,7 @@ import type { LearnerProfile } from '@/lib/learner-profile';
 import { createClient } from '@/lib/supabase/client';
 import { calculateStreak, dateKey, DEFAULT_LEARNING_TIME_ZONE, deviceTimeZone, timeZoneLabel } from '@/lib/progress';
 import { playSpanishSpeech, type VoicePreference } from '@/lib/speech';
+import { ProfileAdminAccess } from '@/components/profile-admin-access';
 
 export type { LearnerProfile } from '@/lib/learner-profile';
 type ProgressSummary = { streak: number; lessons: number; accuracy: number };
@@ -90,6 +91,7 @@ export function ProfileDialog({ onProfileChange, mobile = false, fallbackAvatarS
       </DialogTrigger>
       <DialogContent className="max-h-[calc(100dvh-2rem)] max-w-md gap-6 overflow-y-auto rounded-[24px] border border-white/80 p-6 shadow-[0_28px_90px_rgba(20,38,33,.22)] sm:p-7">
         <DialogHeader><DialogTitle className="text-2xl font-semibold tracking-[-.04em]">Profile</DialogTitle><DialogDescription className="text-base leading-relaxed">Your level controls vocabulary, grammar, conversation, and generated practice.</DialogDescription></DialogHeader>
+        {open && userId && <ProfileAdminAccess key={userId} userId={userId} />}
         <form onSubmit={saveProfile} className="space-y-5">
           <div className="space-y-2"><Label htmlFor="display-name">Display name <span className="font-normal text-muted-foreground">(optional)</span></Label><Input id="display-name" value={displayName} onChange={(event) => setDisplayName(event.target.value)} maxLength={80} placeholder="How should KurtES address you?" disabled={loading} className="h-12 rounded-[14px] bg-[#f7f7f8] px-4" /></div>
           <div className="space-y-2"><Label htmlFor="proficiency-level">Current Spanish level</Label><Select value={proficiencyLevel} onValueChange={(value) => setProficiencyLevel(value ?? '')} disabled={loading}><SelectTrigger id="proficiency-level" className="h-12 w-full rounded-[14px] bg-[#f7f7f8] px-4"><SelectValue>{proficiencyLevel || 'Choose a level'}</SelectValue></SelectTrigger><SelectContent align="start" className="rounded-[14px] p-1">{CEFR_LEVELS.map((level) => <SelectItem key={level} value={level} className="rounded-[10px] px-3 py-2.5">{level}</SelectItem>)}</SelectContent></Select></div>

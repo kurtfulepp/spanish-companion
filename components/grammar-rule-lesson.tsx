@@ -19,6 +19,7 @@ import {
   type GrammarSubmission,
 } from '@/lib/grammar-evidence';
 import { PAST_PRACTICE } from '@/lib/grammar-past-content';
+import { PracticeTimeTracker } from './practice-time-tracker';
 import styles from '@/app/grammar/grammar.module.css';
 
 export function GrammarRuleLesson({
@@ -120,6 +121,7 @@ export function GrammarRuleLesson({
 
   return (
     <div className={styles.content}>
+      <PracticeTimeTracker active={!previewOnly && saveState !== 'saving' && (stage === 'check' || stage === 'practice' || stage === 'write')} area="grammar" level={lesson.level} />
       <Button variant="ghost" className={styles.back} onClick={onBack}>
         <ArrowLeft size={16} /> {backLabel}
       </Button>

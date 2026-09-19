@@ -6,7 +6,7 @@ import {
   ArrowRight,
   BookOpen,
   Check,
-  Clock3,
+  Info,
   Layers3,
   MessageCircle,
   MoveUpRight,
@@ -14,8 +14,10 @@ import {
 import { LearningHeader } from '@/components/vocabulary-header';
 import { useLearnerProfile } from '@/components/learner-profile-provider';
 import { LevelRequired } from '@/components/level-required';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { CEFR_GUIDANCE, CEFR_LEVELS } from '@/lib/cefr';
 import { DEFAULT_PROFILE_AVATAR_SRC } from '@/lib/learner-profile';
+import { practiceHours } from '@/lib/practice-time';
 import { practiceAreas, type HomeSummary } from '@/lib/home-dashboard';
 import styles from './home.module.css';
 
@@ -36,6 +38,7 @@ export default function HomePage() {
   } | null>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [reload, setReload] = useState(0);
+  const [hoursInfoOpen, setHoursInfoOpen] = useState(false);
   const level = profile.proficiencyLevel;
   // Never retain another user's data or a previous level while the profile changes.
   const summary =
@@ -95,7 +98,7 @@ export default function HomePage() {
         )
       : undefined;
   const suggestions = summary ? practiceAreas(summary).slice(0, 3) : [];
-  const partial = summary && (!vocabulary || !lists || !grammar);
+  const partial = summary && (!vocabulary || !lists || !grammar || summary.practiceSeconds === null);
   const number = (value: number | undefined) =>
     loading || value === undefined || state === 'error'
       ? '—'
@@ -177,18 +180,38 @@ export default function HomePage() {
           >
             <div className={styles.tileTop}>
               <h2 id="home-hours">Practice hours</h2>
-              <Clock3 size={20} aria-hidden="true" />
+              <Tooltip open={hoursInfoOpen} onOpenChange={setHoursInfoOpen}>
+                <TooltipTrigger
+                  className={styles.infoButton}
+                  aria-label="How practice hours are calculated"
+                  closeOnClick={false}
+                  onClick={() => setHoursInfoOpen(true)}
+                >
+                  <Info size={18} aria-hidden="true" />
+                </TooltipTrigger>
+                <TooltipContent side="bottom" align="end" className={styles.hoursTooltip}>
+                  <strong>How hours are calculated</strong>
+                  <ul>
+                    <li>Active exercises, assessments, and conversations over the last 30 days (720 hours).</li>
+                    <li>Pauses when the page is hidden or unfocused, after 60 seconds without interaction, and while waiting for a response.</li>
+                    <li>Browsing, previews, and results screens are excluded.</li>
+                    <li>Overlapping tabs and devices count once. Time saves about every 15 seconds.</li>
+                    <li>Hours round down to two decimals. Earlier, untracked practice isn’t included.</li>
+                  </ul>
+                </TooltipContent>
+              </Tooltip>
             </div>
             <div className={styles.bigMetric}>
-              <strong>—</strong>
+              <strong>{loading || state === 'error' || summary?.practiceSeconds == null ? '—' : practiceHours(summary.practiceSeconds)}</strong>
               <span>hours</span>
             </div>
             <div className={styles.bottomCopy}>
-              <span className={styles.pill}>Not recorded yet</span>
-              <p>
-                Active practice time isn’t measured yet. Your saved practice
-                appears below.
-              </p>
+              <span className={styles.pill}>Last 30 days</span>
+              {(loading || state === 'error' || summary?.practiceSeconds == null || summary.practiceSeconds === 0) && <p>
+                {loading ? 'Loading practice time…' : state === 'error' || summary?.practiceSeconds == null
+                  ? 'Practice time unavailable. Try again.'
+                  : 'No practice time recorded in the last 30 days.'}
+              </p>}
             </div>
           </section>
 

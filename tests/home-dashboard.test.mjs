@@ -42,11 +42,13 @@ function setup({
   rows = [],
   lists = [],
   failure,
+  seconds = 0,
 } = {}) {
   fixture.results = [];
   fixture.fail = false;
   const reads = [];
   setClient({
+    rpc: async () => failure === 'practice_time' ? { data: null, error: {} } : { data: seconds, error: null },
     auth: {
       getUser: async () => ({
         data: { user: signedIn ? { id: 'owner' } : null },
@@ -180,6 +182,16 @@ test('storage failures show unavailable rather than zero knowledge', async () =>
   assert.ok(result.grammar);
   setup({ failure: 'profiles' });
   assert.equal((await GET()).status, 503);
+});
+test('practice hours distinguish saved time, zero and unavailable', async () => {
+  setup({ seconds: 5400 });
+  assert.equal((await (await GET()).json()).practiceSeconds, 5400);
+  setup();
+  assert.equal((await (await GET()).json()).practiceSeconds, 0);
+  setup({ failure: 'practice_time' });
+  const summary = await (await GET()).json();
+  assert.equal(summary.practiceSeconds, null);
+  assert.ok(summary.vocabulary);
 });
 test('grammar counts preserve level and content-version scope across pages', async () => {
   const rule = GRAMMAR_RULES.find((r) => r.level === 'A1');

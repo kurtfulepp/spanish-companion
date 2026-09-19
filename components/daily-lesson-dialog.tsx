@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Check, ChevronRight, Headphones, LoaderCircle, Play, RotateCcw, Sparkles, Volume2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { PracticeTimeTracker } from './practice-time-tracker';
 import { Progress } from '@/components/ui/progress';
 import { createClient } from '@/lib/supabase/client';
 import { playSpanishSpeech, type VoicePreference } from '@/lib/speech';
@@ -156,6 +157,7 @@ export function DailyLessonDialog({ open, onOpenChange, level, voice, onComplete
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent showCloseButton={false} className="max-h-[calc(100vh-2rem)] max-w-[640px] overflow-y-auto rounded-[30px] border border-white/80 p-0 shadow-[0_28px_90px_rgba(20,38,33,.25)]">
+        <PracticeTimeTracker active={open && view === 'activity' && !loading && !saving} area="conversation" level={level} />
         <div className="flex items-center justify-between border-b border-border/70 px-6 py-4 sm:px-8"><span className="inline-flex items-center gap-2 text-sm font-semibold text-[#52776d]"><Sparkles className="size-4" />KurtES daily lesson</span><button onClick={() => onOpenChange(false)} className="grid size-9 place-items-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground" aria-label="Close lesson"><X className="size-4" /></button></div>
 
         {loading && <div className="grid min-h-[440px] place-items-center p-8"><div className="text-center"><span className="mx-auto block size-8 animate-spin rounded-full border-2 border-primary/20 border-t-primary" /><p className="mt-4 text-sm text-muted-foreground">Preparing today’s lesson…</p></div></div>}

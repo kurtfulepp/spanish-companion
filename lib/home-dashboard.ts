@@ -16,6 +16,7 @@ export type HomeSummary = {
   vocabulary: DashboardArea[] | null;
   lists: DashboardArea[] | null;
   grammar: { practiced: number; available: number } | null;
+  practiceSeconds: number | null;
 };
 export function assessedArea(
   area: Pick<DashboardArea, 'id' | 'title' | 'href' | 'kind'>,

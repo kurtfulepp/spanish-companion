@@ -42,6 +42,7 @@ import {
   type ConversationReview,
 } from '@/lib/conversation';
 import styles from './conversation-practice.module.css';
+import { PracticeTimeTracker } from './practice-time-tracker';
 
 type Session = { topic: ConversationTopic; scenario: ConversationScenario };
 export function ConversationPractice({
@@ -254,6 +255,7 @@ export function ConversationPractice({
   const last = messages.at(-1);
   return (
     <div className={styles.root}>
+      <PracticeTimeTracker active={!!session && messages.length > 0 && !review && !busy && !leaveOpen} area="conversation" level={level} />
       <section className={`brand-hero ${styles.hero}`}>
         <p className={styles.eyebrow}>
           <MessageCircle size={16} />

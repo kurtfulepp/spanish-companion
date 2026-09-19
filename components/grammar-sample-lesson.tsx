@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import type { GrammarLesson } from '@/lib/grammar-lessons';
+import { PracticeTimeTracker } from './practice-time-tracker';
 import {
   advanceGrammar,
   grammarResult,
@@ -86,6 +87,7 @@ export function GrammarSampleLesson({
 
   return (
     <div className={styles.content}>
+      <PracticeTimeTracker active={attempt.phase === 'practice'} area="grammar" level={level} />
       <Button variant="ghost" onClick={onBack} className={styles.back}>
         <ArrowLeft size={16} />
         All grammar topics

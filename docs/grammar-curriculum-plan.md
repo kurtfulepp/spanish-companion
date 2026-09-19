@@ -403,6 +403,8 @@ Use several item types across a module. Sentence assembly should have keyboard c
 
 ### Account progress and feedback
 
+The Home practice-hours metric records active exercises and writing in the rolling last 30 days, including supported earlier-level review. Rule browsing and higher-level previews do not count. Duration is activity data only and never establishes learning or changes the profile level; see [Practice time](practice-time.md).
+
 Store progress against stable, versioned rule IDs and the signed-in learner. Keep distinct evidence for recognition, form, choice and production. A grammar module is not “mastered” merely because a learner saw its explanation or passed one repeatable quiz.
 
 Suggested learner-facing states: **Not checked, Learning, Practiced, Due for review, Demonstrated in use.** A later error should reopen the relevant skill without erasing past attempts. Allow reassessment and an “answer may also be valid” feedback mechanism.

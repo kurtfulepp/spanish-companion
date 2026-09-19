@@ -86,6 +86,12 @@ Before delivery, check that new screens use shared styles, the compact upper-rig
 
 ## Join flow
 
+### Closed alpha approval review
+
+Profile shows a read-only **Admin** label and **Open admin panel** link only after the server verifies the current Supabase account's protected admin privilege. Recheck each time Profile opens; do not expose a role picker. The panel and its preview independently enforce admin authorization. Use the shared cream, gold, and terracotta tokens for the profile admin section.
+
+The owner review interface uses the shared warm canvas, coral-to-marigold hero, cream surfaces, gold primary actions, and gold-ring initials avatars. Use Pending and History views, applicant details, and a confirmation naming the applicant before each Approve or Decline decision. Keep decisions individual. Empty states and search must remain usable on mobile. Preview data and simulated decisions must be explicitly labeled and unavailable in production. Approval notifications target `kurtfulepp@gmail.com`; this address is not an authorization mechanism. See [alpha-approval.md](alpha-approval.md) for the interface status and required server enforcement. The existing Join flow below remains current until that connection is complete.
+
 Use a full-screen, sequential Email → Password → Review flow with bottom progress dots, Back/Continue navigation, and a final Create account action. Retain entered values between slides, validate before advancing, keep passwords only in component memory, and respect reduced motion. Dots identify the active step and allow returning to reached steps; they must not bypass field validation. See `docs/account-onboarding.md` for backend mapping.
 
 ## Welcome character
@@ -144,6 +150,10 @@ Do not repeat the learner's display name as a standalone label at the right of t
 
 The “Level” tile uses the signed-in learner's profile avatar, with the same default avatar as the account header when none is set. Read it from the shared learner profile so changes stay synchronized. Do not use the topic compass in this tile.
 
-Active practice duration is not recorded yet: show an em dash and “Not recorded yet”, never fabricated hours or lesson estimates presented as measured time. Replace confident and mastered labels with “Vocabulary you know”, “Needs practice”, and “Ready for assessment”, based only on verified assessment receipts. Show observed later successful checks separately. Label results AI-assessed and revisable; retain grammar practice as practice until production assessment is implemented. Counts describe saved practice, not CEFR completion.
+Practice hours show active practice in the rolling last 30 days (720 hours), with a visible “Last 30 days” label. Count exercises, assessments, and active conversations; pause for hidden/unfocused pages, 60 seconds without interaction, and service waits. Browsing, curriculum previews, and result screens do not count. Merge overlapping intervals across tabs/devices. Show zero only after a successful read with no recorded time; use an em dash for loading or unavailable storage. Do not invent historic time or infer learning from duration. See [Practice time](practice-time.md).
+
+Keep calculation details behind a small “i” tooltip beside Practice hours, using 12px readable text. Support hover, keyboard focus, and tap. Keep the tile focused on its total, “Last 30 days”, and any loading, unavailable, or empty state; omit the inline pause and calculation explanations.
+
+Replace confident and mastered labels with “Vocabulary you know”, “Needs practice”, and “Ready for assessment”, based only on verified assessment receipts. Show observed later successful checks separately. Label results AI-assessed and revisable; retain grammar practice as practice until production assessment is implemented. Counts describe saved practice, not CEFR completion.
 
 Vocabulary assessments follow [Vocabulary assessment](vocabulary-assessment.md). Keep recall and use as two clear steps, visible labels and keyboard-operable text fields, an explicit “I don’t know” action, retained answers on failures, and “My answer may be valid” after grading. Do not show an answer or play target audio before both submissions.

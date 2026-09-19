@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, RotateCcw } from 'lucide-react';
 import { useLearnerProfile } from './learner-profile-provider';
+import { PracticeTimeTracker } from './practice-time-tracker';
 import {
   assessmentQueue,
   type AssessmentScope,
@@ -184,6 +185,7 @@ function AssessmentSession({
         : 'Not assessed';
   return (
     <section className={styles.panel} aria-busy={busy}>
+      <PracticeTimeTracker active={!!challenge && !busy && (stage === 'recall' || stage === 'use')} area="vocabulary" />
       <div className={styles.top}>
         {onExit ? (
           <button onClick={onExit} disabled={busy}>

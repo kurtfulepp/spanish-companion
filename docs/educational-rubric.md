@@ -76,6 +76,8 @@ Grammar now derives its 87-module catalog from the full curriculum and includes 
 
 ## Maintenance
 
+Practice duration is descriptive activity data, separate from learning evidence. The Home metric uses only recorded active practice in the rolling last 30 days; previews and browsing do not count. Time alone never changes knowledge, mastery, or CEFR level. See [Practice time](practice-time.md) for the owner-adopted tracking rule and its limits.
+
 The owner may revise the educational standard. Record the date, changed rule or scope, and affected learning areas; then update the canonical curriculum and its implementations. Keep source-backed judgments, product choices, teacher review, and learner validation distinguishable.
 
 **7 September 2026:** Owner adopted the complete grammar curriculum as the educational foundation for all KurtES learning areas. Project instructions now require this rubric and the full curriculum for educational work.

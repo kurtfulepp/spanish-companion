@@ -18,8 +18,13 @@ import { useLearnerProfile } from '@/components/learner-profile-provider';
 import { LevelRequired } from '@/components/level-required';
 import { createClient } from '@/lib/supabase/client';
 import { VocabularyAssessment } from '@/components/vocabulary-assessment';
+import {
+  DiningOutLearningPath,
+  type DiningOutPathItem,
+} from '@/components/dining-out-learning-path';
 import { topicPresentation } from '@/lib/vocabulary-topics';
 import type { CEFRLevel } from '@/lib/cefr';
+import type { VocabularyLearningSet } from '@/lib/vocabulary-learning-path';
 
 type VocabularyItem = {
   id: string;
@@ -32,6 +37,10 @@ type VocabularyItem = {
   sort_order: number;
   cefr_level: CEFRLevel;
   source: 'curated' | 'ai';
+  learning_set_id: string | null;
+  curriculum_position: number | null;
+  curriculum_role: 'core' | 'review' | null;
+  introduced_level: CEFRLevel | null;
 };
 type VocabularySection = {
   id: string;
@@ -54,10 +63,13 @@ export function VocabularyTopicPage({ themeId }: { themeId: string }) {
   } = useLearnerProfile();
   const [theme, setTheme] = useState<Theme | null>(null);
   const [sections, setSections] = useState<VocabularySection[]>([]);
+  const [learningSets, setLearningSets] = useState<VocabularyLearningSet[]>([]);
   const [mode, setMode] = useState<Mode>('overview');
   const [selectedSection, setSelectedSection] = useState('all');
   const [assessmentTarget, setAssessmentTarget] = useState<string | undefined>();
   const [recentlyStudied, setRecentlyStudied] = useState(false);
+  const [assessmentReturnMode, setAssessmentReturnMode] =
+    useState<Mode>('overview');
   const [loading, setLoading] = useState(true);
   const [expanding, setExpanding] = useState(false);
   const [message, setMessage] = useState('');
@@ -71,9 +83,54 @@ export function VocabularyTopicPage({ themeId }: { themeId: string }) {
     const supabase = createClient();
     setLoading(true);
     setMessage('');
+    const loadSections = async () => {
+      const enhanced = await supabase
+        .from('vocabulary_sections')
+        .select(
+          'id, slug, title, description, sort_order, vocabulary_items(id, spanish, english, example_es, example_en, usage_note, sort_order, cefr_level, source, learning_set_id, curriculum_position, curriculum_role, introduced_level)',
+        )
+        .eq('theme_id', themeId)
+        .order('sort_order');
+      if (!enhanced.error) return enhanced;
+      const legacy = await supabase
+        .from('vocabulary_sections')
+        .select(
+          'id, slug, title, description, sort_order, vocabulary_items(id, spanish, english, example_es, example_en, usage_note, sort_order, cefr_level, source)',
+        )
+        .eq('theme_id', themeId)
+        .order('sort_order');
+      return {
+        ...legacy,
+        data: legacy.data?.map((section) => ({
+          ...section,
+          vocabulary_items: section.vocabulary_items.map((item) => ({
+            ...item,
+            learning_set_id: null,
+            curriculum_position: null,
+            curriculum_role: null,
+            introduced_level: null,
+          })),
+        })),
+      };
+    };
+    const loadLearningSets = async () => {
+      if (themeId !== 'dining-out' || profile.proficiencyLevel !== 'B2')
+        return [];
+      const { data } = await supabase
+        .from('vocabulary_learning_sets')
+        .select(
+          'id, set_number, title, description, item_count, content_version',
+        )
+        .eq('theme_id', themeId)
+        .eq('cefr_level', profile.proficiencyLevel)
+        .eq('is_published', true)
+        .order('set_number');
+      return (data ?? []) as VocabularyLearningSet[];
+    };
     const [
       { data: themeData, error: themeError },
       { data: sectionData, error: sectionError },
+      setData,
     ] = await Promise.all([
       supabase
         .from('vocabulary_themes')
@@ -81,20 +138,17 @@ export function VocabularyTopicPage({ themeId }: { themeId: string }) {
         .eq('id', themeId)
         .eq('is_published', true)
         .maybeSingle(),
-      supabase
-        .from('vocabulary_sections')
-        .select(
-          'id, slug, title, description, sort_order, vocabulary_items(id, spanish, english, example_es, example_en, usage_note, sort_order, cefr_level, source)',
-        )
-        .eq('theme_id', themeId)
-        .order('sort_order'),
+      loadSections(),
+      loadLearningSets(),
     ]);
     if (themeError || sectionError || !themeData || !sectionData?.length) {
       setTheme(null);
       setSections([]);
+      setLearningSets([]);
       setMessage('This vocabulary topic could not be loaded right now.');
     } else {
       setTheme(themeData as Theme);
+      setLearningSets(setData);
       setSections(
         (sectionData as VocabularySection[]).map((section) => ({
           ...section,
@@ -114,6 +168,7 @@ export function VocabularyTopicPage({ themeId }: { themeId: string }) {
       setMode('overview');
       setSelectedSection('all');
       setAssessmentTarget(undefined);
+      setAssessmentReturnMode('overview');
     })();
   }, [loadTopic, profile.proficiencyLevel, profileLoading, userId]);
 
@@ -132,9 +187,40 @@ export function VocabularyTopicPage({ themeId }: { themeId: string }) {
       ? sections
       : sections.filter((section) => section.slug === selectedSection);
   const generatedCount = allItems.filter((item) => item.source === 'ai').length;
+  const learningPathItems = useMemo(
+    () =>
+      sections.flatMap((section) =>
+        section.vocabulary_items
+          .filter((item) => item.learning_set_id)
+          .map((item) => ({
+            ...item,
+            sectionId: section.id,
+            sectionTitle: section.title,
+            sectionDescription: section.description,
+            sectionSort: section.sort_order,
+          })),
+      ) as DiningOutPathItem[],
+    [sections],
+  );
+  const hasDiningOutPath =
+    themeId === 'dining-out' &&
+    profile.proficiencyLevel === 'B2' &&
+    learningSets.length === 5 &&
+    learningPathItems.length === 120;
+  const expressionCount = hasDiningOutPath
+    ? learningPathItems.length
+    : allItems.length;
   function startDiagnostic() {
     setAssessmentTarget(undefined);
     setRecentlyStudied(false);
+    setAssessmentReturnMode('overview');
+    setMode('diagnostic');
+  }
+
+  function assessExpression(itemId: string, studied: boolean) {
+    setAssessmentTarget(itemId);
+    setRecentlyStudied(studied);
+    setAssessmentReturnMode('explore');
     setMode('diagnostic');
   }
 
@@ -267,7 +353,7 @@ export function VocabularyTopicPage({ themeId }: { themeId: string }) {
                   onClick={() => setMode('explore')}
                   className="h-12 rounded-full border-[#cfb96f] bg-white/65 px-6 text-base font-bold"
                 >
-                  Explore {allItems.length} expressions
+                  Explore {expressionCount} expressions
                   <ArrowRight className="size-4" />
                 </Button>
               </div>
@@ -294,9 +380,26 @@ export function VocabularyTopicPage({ themeId }: { themeId: string }) {
         </section>
       )}
 
-      {mode === 'diagnostic' && <VocabularyAssessment scope={{ themeId }} targetId={assessmentTarget} recentlyStudied={recentlyStudied} onExit={() => setMode('overview')} />}
+      {mode === 'diagnostic' && (
+        <VocabularyAssessment
+          scope={{ themeId }}
+          targetId={assessmentTarget}
+          recentlyStudied={recentlyStudied}
+          onExit={() => setMode(assessmentReturnMode)}
+        />
+      )}
 
-      {mode === 'explore' && (
+      {mode === 'explore' && hasDiningOutPath && (
+        <DiningOutLearningPath
+          items={learningPathItems}
+          sets={learningSets}
+          voice={profile.voicePreference}
+          onBack={() => setMode('overview')}
+          onAssess={assessExpression}
+        />
+      )}
+
+      {mode === 'explore' && !hasDiningOutPath && (
         <section className="mx-auto mt-3 max-w-[1360px]">
           <div className="rounded-[28px] bg-[#7f302b] px-6 py-8 text-white sm:px-9">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
@@ -427,7 +530,7 @@ export function VocabularyTopicPage({ themeId }: { themeId: string }) {
                           </p>
                         )}
                         <div className="mt-5 flex items-center gap-2 border-t border-border/70 pt-4">
-                          <button className="rounded-full bg-[var(--brand-gold)] px-4 py-2 text-sm font-semibold text-[var(--brand-ink)]" onClick={() => { setAssessmentTarget(item.id); setRecentlyStudied(true); setMode('diagnostic'); }}>Check this expression</button>
+                          <button className="rounded-full bg-[var(--brand-gold)] px-4 py-2 text-sm font-semibold text-[var(--brand-ink)]" onClick={() => assessExpression(item.id, true)}>Check this expression</button>
                           <span className="text-xs text-muted-foreground">Browsing does not mark it known.</span>
                         </div>
                       </article>

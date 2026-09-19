@@ -121,14 +121,20 @@ export async function GET() {
         }
         return { practiced: practiced.size, available: eligible.length };
       })(),
+      (async () => {
+        const { data, error } = await supabase.rpc('practice_seconds_last_30_days');
+        if (error || typeof data !== 'number' || !Number.isFinite(data) || data < 0) throw new Error('Practice time unavailable');
+        return data;
+      })(),
     ]);
-    const [catalog, lists, grammar] = results;
+    const [catalog, lists, grammar, time] = results;
     // A profile change during loading must never display another level's catalog.
     const summary: HomeSummary = {
       level,
       vocabulary: catalog.status === 'fulfilled' ? catalog.value : null,
       lists: lists.status === 'fulfilled' ? lists.value : null,
       grammar: grammar.status === 'fulfilled' ? grammar.value : null,
+      practiceSeconds: time.status === 'fulfilled' ? time.value : null,
     };
     return reply(summary);
   } catch {
