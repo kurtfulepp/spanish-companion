@@ -19,6 +19,10 @@ import {
   type GrammarSubmission,
 } from '@/lib/grammar-evidence';
 import { PAST_PRACTICE } from '@/lib/grammar-past-content';
+import {
+  grammarContextSupport,
+  type GrammarContext,
+} from '@/lib/grammar-context';
 import { PracticeTimeTracker } from './practice-time-tracker';
 import styles from '@/app/grammar/grammar.module.css';
 
@@ -28,6 +32,7 @@ export function GrammarRuleLesson({
   previewOnly = false,
   mode = 'lesson',
   backLabel = 'Back to curriculum',
+  context,
   onBack,
   onSaved,
 }: {
@@ -36,10 +41,21 @@ export function GrammarRuleLesson({
   previewOnly?: boolean;
   mode?: 'lesson' | 'revisit';
   backLabel?: string;
+  context?: GrammarContext;
   onBack: () => void;
   onSaved: (attempt: GrammarEvidence) => void;
 }) {
   const extra = PAST_PRACTICE[lesson.id];
+  const contextSupport = context
+    ? grammarContextSupport(context, lesson.id)
+    : null;
+  const contextExample =
+    contextSupport?.example &&
+    !lesson.examples.some(
+      (example) => example.spanish === contextSupport.example?.spanish,
+    )
+      ? contextSupport.example
+      : null;
   const review = mode === 'revisit' && !!extra && !previewOnly;
   const firstStage = previewOnly
     ? 'learn'
@@ -232,6 +248,31 @@ export function GrammarRuleLesson({
                   </div>
                 ))}
               </div>
+              {context && contextSupport && (
+                <aside className={styles.contextLesson}>
+                  <span>
+                    {context.kind === 'theme'
+                      ? 'From your vocabulary practice'
+                      : 'From your saved photo list'}
+                  </span>
+                  <h3>{context.title}</h3>
+                  <p>{contextSupport.situation}</p>
+                  {contextExample && (
+                    <div className={styles.contextExample}>
+                      <p lang="es">{contextExample.spanish}</p>
+                      <p>{contextExample.english}</p>
+                    </div>
+                  )}
+                  <ul className={styles.contextWords} aria-label="Word bank">
+                    {context.words.map((word) => (
+                      <li key={`${word.spanish}:${word.english}`}>
+                        <span lang="es">{word.spanish}</span>
+                        <span>{word.english}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </aside>
+              )}
               <div className={styles.reminder}>
                 <h3>What changes the meaning?</h3>
                 <p>{lesson.contrast}</p>
@@ -414,6 +455,23 @@ export function GrammarRuleLesson({
               <p className={styles.prose}>
                 {review ? extra.writingPrompt : lesson.production.prompt}
               </p>
+              {context && contextSupport && (
+                <div className={styles.contextWriting}>
+                  <strong>Use {context.title} if it fits</strong>
+                  <p>
+                    {contextSupport.situation} You can include one or two words
+                    from your word bank; using them is optional.
+                  </p>
+                  <ul className={styles.contextWords} aria-label="Word bank">
+                    {context.words.map((word) => (
+                      <li key={`${word.spanish}:${word.english}`}>
+                        <span lang="es">{word.spanish}</span>
+                        <span>{word.english}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               <div className={styles.answerInput}>
                 <label htmlFor="grammar-writing">Your Spanish</label>
                 <Textarea
@@ -500,6 +558,8 @@ export function GrammarRuleLesson({
               <p className={styles.visitNote}>
                 These results describe this practice attempt. Independent
                 accuracy and later retention have not been assessed.
+                {context &&
+                  ' Your selected vocabulary supplied context and was not scored.'}
               </p>
               <div className={styles.answerReview}>
                 {practice.map((item) => (

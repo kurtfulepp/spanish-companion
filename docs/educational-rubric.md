@@ -43,6 +43,16 @@ Browsing a preview must not change the profile, unlock practice, award completio
 
 Grammar is the first implementation of this rule. Apply it consistently when adding curriculum browsing to other learning areas; this adoption does not claim that those areas already provide preview interfaces.
 
+## Cross-area practice context rule
+
+**Owner-adopted, 19 September 2026. Applies when one learning area reuses material from another.**
+
+Keep the transferable skill as the organizing axis. Grammar remains organized by grammatical system and rule; a vocabulary theme or learner-owned word list is an optional context for examples and original use, not a replacement grammar syllabus. Always retain a General context so the learner is never confined to previously studied topics.
+
+A published vocabulary theme becomes available to Grammar only after the learner has practiced at least one expression in that theme at the exact active profile level. Show only practiced expressions in its word bank. An eligible photo list may supply only the bilingual terms the learner reviewed and saved; never pass the original image, filename, URL, recognition payload, or rejected terms into Grammar. A current-level list or a legacy list without recorded level may be used; a list created for another exact level remains preserved but is not offered as current Grammar context.
+
+Context can change the setting, authored example, and optional writing word bank. It must not change the rule explanation, accepted answers, exercise scoring, prerequisites, evidence identity, or practice eligibility. Using a theme word is optional and is not scored as vocabulary evidence. Grammar results do not promote vocabulary status, and vocabulary practice does not count as grammar evidence. Contextual examples must remain natural, level-appropriate, and accurate for the target rule; do not manufacture examples by mechanically inserting arbitrary saved words.
+
 ## Application across learning areas
 
 | Area                              | How the rubric applies                                                                                                                                                                                                                                                        |
@@ -85,6 +95,8 @@ The owner may revise the educational standard. Record the date, changed rule or 
 **7 September 2026:** Owner clarified that C1 and C2 grammar requirements must remain visible in the level dropdown. All six curriculum levels are now discoverable; previews remain distinct from the learner’s active practice level.
 
 **7 September 2026:** Owner explicitly adopted the higher-level curriculum preview behavior as a reusable app-wide rule, documented above.
+
+**19 September 2026:** Owner adopted the cross-area practice context rule. Practiced vocabulary themes and reviewed photo-word lists may provide optional Grammar settings and word banks while rule scope, scoring, and evidence remain separate.
 
 ## Assessed vocabulary knowledge
 

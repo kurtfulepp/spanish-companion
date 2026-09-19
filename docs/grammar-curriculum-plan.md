@@ -359,6 +359,8 @@ A learner can revisit earlier work without changing their proficiency level. New
 
 The curriculum level dropdown must list all six levels, including C1 and C2. Higher-level module requirements and rule explanations are available as explicitly labeled previews. Browsing those requirements does not change the active profile or create an out-of-level practice attempt. This visibility requirement was clarified by the owner on 7 September 2026 and adopted as the app-wide [Curriculum preview rule](educational-rubric.md#curriculum-preview-rule).
 
+Grammar also offers an optional practice context without reorganizing the curriculum around themes. General is always available. A vocabulary theme may appear after the learner has practiced expressions in that theme at the exact active level; only those practiced expressions enter the word bank. A reviewed and saved photo list may supply accepted bilingual terms, never the original image or analysis payload. The selected context can provide a natural authored example, a communicative setting, and optional words for the transfer task. It never alters the rule, answer key, score, eligibility, or versioned evidence, and Grammar does not award Vocabulary evidence. This separation is the owner-adopted [cross-area practice context rule](educational-rubric.md#cross-area-practice-context-rule).
+
 ### Prerequisite paths to encode first
 
 The module lists group scope; they are not a requirement to finish every row in numerical order. These dependencies determine the initial learning sequence. Teacher authoring should resolve them into atomic rule IDs.
@@ -469,6 +471,8 @@ Do not estimate effort by counting the 87 module headings as 87 lessons. Size th
 | Four-question lessons with three choices per question; visit-only results | Early interaction proof only | Retain answer locking/retry behavior, add varied tasks and durable rule evidence                    |
 
 Implementation update, 12 September 2026: the first connected practice path now links seven focused rules from present-person agreement to integrated past narration, with separate starting checks, contextual practice, ungraded writing, and a review bank. Eleven rule lessons are available in total. This is partial curriculum coverage; independent teacher review and validated retention assessment remain pending. See [Grammar learning](grammar-learning.md) for the exact rule inventory and evidence behavior.
+
+Implementation update, 19 September 2026: Grammar can reuse practiced exact-level vocabulary themes and reviewed photo-word lists as an optional context layer. The implementation keeps General available, exposes only eligible saved terms, and leaves rule questions and grammar evidence unchanged. The first authored theme examples cover Dining Out across the eleven available rules; other themes and custom lists receive a communicative setting and word bank until their own examples are reviewed.
 
 ## 18. Teacher handoff and implementation decision
 

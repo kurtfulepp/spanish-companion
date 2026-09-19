@@ -15,6 +15,7 @@ import {
 import { EVIDENCE_LABELS, GRAMMAR_RULES } from '@/lib/grammar-rules';
 import { GRAMMAR_LESSONS } from '@/lib/grammar-lessons';
 import type { GrammarEvidence } from '@/lib/grammar-evidence';
+import type { GrammarContext } from '@/lib/grammar-context';
 import styles from '@/app/grammar/grammar.module.css';
 
 export function GrammarCurriculum({ level }: { level: CEFRLevel }) {
@@ -33,6 +34,11 @@ export function GrammarCurriculum({ level }: { level: CEFRLevel }) {
     'loading' | 'ready' | 'error'
   >('loading');
   const [reload, setReload] = useState(0);
+  const [contexts, setContexts] = useState<GrammarContext[]>([]);
+  const [selectedContextId, setSelectedContextId] = useState('general');
+  const [contextState, setContextState] = useState<
+    'loading' | 'ready' | 'error'
+  >('loading');
   const [sampleResults, setSampleResults] = useState<
     Record<string, { score: number; total: number }>
   >({});
@@ -73,6 +79,34 @@ export function GrammarCurriculum({ level }: { level: CEFRLevel }) {
     return () => controller.abort();
   }, [reload]);
   useEffect(() => {
+    const controller = new AbortController();
+    fetch('/api/grammar/contexts', {
+      signal: controller.signal,
+      cache: 'no-store',
+    })
+      .then(async (response) => {
+        const result = (await response.json()) as {
+          contexts?: GrammarContext[];
+        };
+        if (!response.ok || !Array.isArray(result.contexts))
+          throw new Error('Unavailable');
+        if (!controller.signal.aborted) {
+          setContexts(result.contexts);
+          setSelectedContextId((current) =>
+            current === 'general' ||
+            result.contexts!.some((context) => context.id === current)
+              ? current
+              : 'general',
+          );
+          setContextState('ready');
+        }
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setContextState('error');
+      });
+    return () => controller.abort();
+  }, []);
+  useEffect(() => {
     if (!active && returnId.current) {
       const target = triggers.current[returnId.current];
       (target ?? catalogHeading.current)?.focus();
@@ -93,6 +127,9 @@ export function GrammarCurriculum({ level }: { level: CEFRLevel }) {
     ]);
   }
   const rule = GRAMMAR_RULES.find((item) => item.id === active);
+  const selectedContext = contexts.find(
+    (context) => context.id === selectedContextId,
+  );
   if (rule)
     return (
       <GrammarRuleLesson
@@ -106,6 +143,7 @@ export function GrammarCurriculum({ level }: { level: CEFRLevel }) {
         previous={attempts.find(
           (item) => item.ruleId === rule.id && item.version === rule.version,
         )}
+        context={selectedContext}
         onBack={back}
         onSaved={onSaved}
       />
@@ -163,6 +201,64 @@ export function GrammarCurriculum({ level }: { level: CEFRLevel }) {
           </p>
         </div>
         <span className={styles.heroCount}>A1–C2 curriculum · 87 modules</span>
+      </section>
+
+      <section
+        className={styles.contextSelector}
+        aria-labelledby="grammar-context-heading"
+      >
+        <div>
+          <span className={styles.contextEyebrow}>Optional context</span>
+          <h2 id="grammar-context-heading">Connect familiar vocabulary</h2>
+          <p>
+            Use a familiar setting for examples and writing. The grammar rule
+            and scoring stay the same.
+          </p>
+        </div>
+        <div className={styles.contextControl}>
+          <label htmlFor="grammar-context">Practice context</label>
+          <select
+            id="grammar-context"
+            value={selectedContextId}
+            onChange={(event) => setSelectedContextId(event.target.value)}
+            disabled={contextState === 'loading'}
+          >
+            <option value="general">General</option>
+            {contexts.some((context) => context.kind === 'theme') && (
+              <optgroup label="From Vocabulary">
+                {contexts
+                  .filter((context) => context.kind === 'theme')
+                  .map((context) => (
+                    <option key={context.id} value={context.id}>
+                      {context.title}
+                    </option>
+                  ))}
+              </optgroup>
+            )}
+            {contexts.some((context) => context.kind === 'custom') && (
+              <optgroup label="Your photo lists">
+                {contexts
+                  .filter((context) => context.kind === 'custom')
+                  .map((context) => (
+                    <option key={context.id} value={context.id}>
+                      {context.title}
+                    </option>
+                  ))}
+              </optgroup>
+            )}
+          </select>
+          <p>
+            {contextState === 'loading'
+              ? 'Loading contexts from your saved practice…'
+              : contextState === 'error'
+                ? 'Saved contexts are unavailable. General is ready to use.'
+                : selectedContext?.kind === 'custom'
+                  ? 'Uses only the words you reviewed and saved. Your image is not used.'
+                  : selectedContext?.kind === 'theme'
+                    ? 'Uses expressions you have already practiced in Vocabulary.'
+                    : 'Uses the lesson’s standard examples and writing prompt.'}
+          </p>
+        </div>
       </section>
 
       <GrammarLearningPath

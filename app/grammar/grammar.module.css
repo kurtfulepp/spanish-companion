@@ -446,6 +446,115 @@
 .heroCount {
   flex-shrink: 0;
 }
+.contextSelector {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
+  gap: 28px;
+  align-items: center;
+  margin-top: 18px;
+  padding: 24px 28px;
+  border: 1px solid var(--brand-border);
+  border-radius: var(--brand-radius-card);
+  background: var(--brand-surface);
+}
+.contextEyebrow,
+.contextLesson > span {
+  display: block;
+  color: var(--brand-ink-muted);
+  font-size: 0.75rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.contextSelector h2 {
+  margin-top: 6px;
+  font-size: 1.3rem;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+}
+.contextSelector > div > p,
+.contextControl p {
+  margin-top: 7px;
+  color: var(--brand-ink-muted);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+.contextControl label {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+.contextControl select {
+  width: 100%;
+  min-height: 44px;
+  padding: 9px 11px;
+  border: 1px solid var(--brand-border);
+  border-radius: 10px;
+  background: var(--brand-canvas);
+  color: var(--brand-ink);
+  font: inherit;
+}
+.contextControl select:focus-visible {
+  outline: 3px solid var(--brand-ink);
+  outline-offset: 3px;
+}
+.contextLesson,
+.contextWriting {
+  margin: 24px 0;
+  padding: 20px;
+  border: 1px solid var(--brand-border);
+  border-radius: 16px;
+  background: var(--brand-canvas);
+}
+.contextLesson h3 {
+  margin-top: 7px;
+  font-size: 1.15rem;
+  font-weight: 650;
+}
+.contextLesson > p,
+.contextWriting > p {
+  margin-top: 8px;
+  color: var(--brand-ink-muted);
+  line-height: 1.65;
+}
+.contextWriting > strong {
+  font-weight: 650;
+}
+.contextExample {
+  margin-top: 16px;
+  padding-left: 14px;
+  border-left: 3px solid var(--brand-coral);
+  line-height: 1.6;
+}
+.contextExample p + p {
+  color: var(--brand-ink-muted);
+  font-size: 0.875rem;
+}
+.contextWords {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 0;
+  list-style: none;
+}
+.contextWords li {
+  display: inline-flex;
+  gap: 6px;
+  padding: 7px 9px;
+  border: 1px solid var(--brand-border);
+  border-radius: 10px;
+  background: var(--brand-surface);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+.contextWords li span:first-child {
+  font-weight: 650;
+}
+.contextWords li span + span {
+  color: var(--brand-ink-muted);
+}
 .overview {
   margin-top: 32px;
 }
@@ -1047,6 +1156,11 @@
   align-items: flex-end;
 }
 @media (max-width: 760px) {
+  .contextSelector {
+    grid-template-columns: 1fr;
+    gap: 18px;
+    padding: 22px;
+  }
   .pathSuggestion {
     align-items: stretch;
     flex-direction: column;

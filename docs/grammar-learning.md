@@ -10,21 +10,29 @@ Each of the 87 modules shows a plain-language “when you use it” description 
 
 `docs/grammar-curriculum-plan.md` owns module names, practical use descriptions, scope, objectives, and the module-to-system index. Run `node scripts/generate-grammar-curriculum.mjs` after editing that document. The generated `lib/grammar-curriculum.generated.ts` must match it exactly; the parity test detects drift.
 
+## Optional vocabulary context
+
+The curriculum page offers General plus eligible saved contexts. A published topic appears after at least one exact-level expression has a saved Vocabulary practice record; its Grammar word bank contains only practiced expressions. A learner-owned photo list appears when it was reviewed, saved with `source = photo`, is active, and either matches the exact profile level or predates level tagging. Demo lists and lists tagged for another level are excluded. The API authenticates the account and scopes both progress and custom-list queries to that account.
+
+Selecting a context does not change the active rule, the fixed practice questions, accepted answers, score, or saved submission. The Learn stage adds a communicative situation, an optional authored example when available, and up to eight familiar terms. The Write stage repeats the situation and terms as optional support. Results state that vocabulary supplied context and was not scored. General preserves the canonical lesson unchanged.
+
+Dining Out has authored contextual examples for all eleven current rule lessons. Other published themes use an authored theme situation and practiced word bank; custom lists use a neutral real-or-imagined situation because arbitrary saved terms cannot be inserted safely into a grammatical example. The original image never reaches the endpoint or Grammar UI: custom-list storage contains accepted bilingual text only.
+
 ## Rule lessons
 
-| Level | Rule | Scope and rationale |
-| --- | --- | --- |
-| A1 | A1-08.present-person | Regular present person agreement as a foundation for past conjugation; explicit subject and regional address notes. |
-| A2 | A2-05.regular-preterite | Regular preterite person endings and meaningful written accents. |
-| A2 | A2-05.irregular-preterite | Frequent ir/ser, tener, estar, and hacer forms, including contextual disambiguation of ir/ser. |
-| B1 | B1-01.past-viewpoint | Imperfect background versus bounded preterite events, including bounded repetition and long events. |
-| B2 | B2-01.past-narration | Integrates narrative viewpoint and anteriority. This is only the narrative portion of B2-01, not its entire indicative inventory. |
-| A1 | A1-04.agreement | Gender/number agreement in familiar descriptions, including a common adjective with one gender form. Builds on noun gender and articles. |
-| A2 | A2-06.imperfect | Regular imperfect forms, a frequent irregular, and past routines. Full past-viewpoint contrasts remain in B1. |
-| B1 | B1-02.earlier-past | Pluperfect formation and anteriority to a past reference point, using previously introduced participles. |
-| B2 | B2-04.past-counterfactual | Past condition and past result, accepting both -ra and -se in the condition. Mixed timelines remain outside this rule. |
-| C1 | C1-04.cuyo | Possessive relative agreement, prepositions, reference, and formal reformulation. |
-| C2 | C2-03.open-concession | Repeated-subjunctive constructions with explicit paraphrase and stance analysis. This refines a construction also present in the PCIC C1 inventory; it is not a claim that first exposure must wait until C2. |
+| Level | Rule                      | Scope and rationale                                                                                                                                                                                           |
+| ----- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A1    | A1-08.present-person      | Regular present person agreement as a foundation for past conjugation; explicit subject and regional address notes.                                                                                           |
+| A2    | A2-05.regular-preterite   | Regular preterite person endings and meaningful written accents.                                                                                                                                              |
+| A2    | A2-05.irregular-preterite | Frequent ir/ser, tener, estar, and hacer forms, including contextual disambiguation of ir/ser.                                                                                                                |
+| B1    | B1-01.past-viewpoint      | Imperfect background versus bounded preterite events, including bounded repetition and long events.                                                                                                           |
+| B2    | B2-01.past-narration      | Integrates narrative viewpoint and anteriority. This is only the narrative portion of B2-01, not its entire indicative inventory.                                                                             |
+| A1    | A1-04.agreement           | Gender/number agreement in familiar descriptions, including a common adjective with one gender form. Builds on noun gender and articles.                                                                      |
+| A2    | A2-06.imperfect           | Regular imperfect forms, a frequent irregular, and past routines. Full past-viewpoint contrasts remain in B1.                                                                                                 |
+| B1    | B1-02.earlier-past        | Pluperfect formation and anteriority to a past reference point, using previously introduced participles.                                                                                                      |
+| B2    | B2-04.past-counterfactual | Past condition and past result, accepting both -ra and -se in the condition. Mixed timelines remain outside this rule.                                                                                        |
+| C1    | C1-04.cuyo                | Possessive relative agreement, prepositions, reference, and formal reformulation.                                                                                                                             |
+| C2    | C2-03.open-concession     | Repeated-subjunctive constructions with explicit paraphrase and stance analysis. This refines a construction also present in the PCIC C1 inventory; it is not a claim that first exposure must wait until C2. |
 
 These are authored drafts, version 1, awaiting independent teacher review. Each record has a source, prerequisite modules, explanatory examples, a meaning contrast, variation/restriction notes, accepted answers, and an original-writing task. References include the [PCIC A1–A2 inventory](https://cvc.cervantes.es/ensenanza/biblioteca_ele/plan_curricular/niveles/02_gramatica_inventario_a1-a2.htm), [B1–B2 inventory](https://cvc.cervantes.es/ensenanza/biblioteca_ele/plan_curricular/niveles/02_gramatica_inventario_b1-b2.htm), [C1–C2 inventory](https://cvc.cervantes.es/ensenanza/biblioteca_ele/plan_curricular/niveles/02_gramatica_inventario_c1-c2.htm), and [RAE–ASALE on cuyo](https://www.rae.es/dpd/cuyo).
 
@@ -57,6 +65,7 @@ The Supabase migration `20260907180000_create_grammar_rule_attempts.sql` creates
 ## Verification and remaining coverage
 
 - `node --test tests/grammar-api.test.mjs tests/grammar-curriculum.test.mjs tests/grammar-practice.test.mjs tests/grammar-learning-path.test.mjs tests/level-content.test.mjs`
+- `node --test tests/grammar-context.test.mjs` covers practiced-theme eligibility, custom-list privacy and level boundaries, bounded word banks, and authored/fallback context support.
 - `npx tsc --noEmit`, focused lint, and `npm run build`.
 - `supabase/tests/grammar_rule_attempts.sql`: rollback-only owner access, duplicate identity, immutable records, restricted timestamps, level eligibility, validation, cross-account isolation, and preserved earlier-level review.
 
