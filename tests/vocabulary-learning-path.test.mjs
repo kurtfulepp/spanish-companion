@@ -151,3 +151,30 @@ test('builds a six-item session that mixes reviews with new curriculum', () => {
   assert.equal(session.newRemaining, 0);
   assert.equal(session.practiceRemaining, 2);
 });
+
+test('builds the same six-expression flow for a topic without formal sets', () => {
+  const topicItems = Array.from({ length: 8 }, (_, index) => ({
+    id: `topic-${index + 1}`,
+    learning_set_id: null,
+    curriculum_position: index + 1,
+  }));
+  const summary = buildLearningPath(
+    topicItems,
+    [],
+    catalog(
+      result('topic-1', 'known', false, '2020-01-01'),
+      result('topic-2', 'needs_practice'),
+    ),
+  );
+  const session = buildLearningSession(summary);
+
+  assert.equal(summary.activeSet, null);
+  assert.equal(summary.setProgress.length, 0);
+  assert.equal(summary.entries.length, 8);
+  assert.deepEqual(
+    session.items.map((item) => item.id),
+    ['topic-1', 'topic-2', 'topic-3', 'topic-4', 'topic-5', 'topic-6'],
+  );
+  assert.equal(session.newRemaining, 2);
+  assert.equal(session.practiceRemaining, 0);
+});

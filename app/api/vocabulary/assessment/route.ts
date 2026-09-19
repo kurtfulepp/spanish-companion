@@ -5,6 +5,7 @@ import {
   assessmentStatus,
   ASSESSMENT_VERSION,
   DAY_MS,
+  type AssessmentMode,
   type AssessmentScope,
   type AssessmentResult,
 } from '@/lib/vocabulary-assessment';
@@ -158,6 +159,7 @@ type Challenge = {
   usePrompt: string;
   sample: string;
   criterion: string;
+  mode?: AssessmentMode;
 };
 export async function POST(request: Request) {
   try {
@@ -222,19 +224,27 @@ export async function POST(request: Request) {
           404,
           'This expression is unavailable at your current level.',
         );
-      await quota();
       const prior = results.filter(
         (result) => result.targetKey === target.key && result.level === level,
       );
-      const task = await generateUsePrompt(
-        target,
-        level,
-        prior.map((result) => result.usePrompt),
-        apiKey,
-        model,
-        request.signal,
-        !assisted,
-      );
+      const mode: AssessmentMode = assisted ? 'practice' : 'check';
+      let task = {
+        prompt: '',
+        sample: target.spanish,
+        criterion: 'Recall the target meaning accurately in Spanish.',
+      };
+      if (!assisted) {
+        await quota();
+        task = await generateUsePrompt(
+          target,
+          level,
+          prior.map((result) => result.usePrompt),
+          apiKey,
+          model,
+          request.signal,
+          true,
+        );
+      }
       const id = randomUUID();
       const challenge: Challenge = {
         version: ASSESSMENT_VERSION,
@@ -250,6 +260,7 @@ export async function POST(request: Request) {
         usePrompt: task.prompt,
         sample: task.sample,
         criterion: task.criterion,
+        mode,
       };
       return reply({
         challenge: {
@@ -257,6 +268,7 @@ export async function POST(request: Request) {
           token: sealChallenge(challenge, secret),
           recallPrompt: challenge.recallPrompt,
           usePrompt: challenge.usePrompt,
+          mode,
         },
       });
     }
@@ -291,12 +303,14 @@ export async function POST(request: Request) {
         409,
         'This check expired. Your typed answers are still here; start a new check when ready.',
       );
-    if (
-      ![body.recallAnswer, body.useAnswer].every(
-        (answer) => typeof answer === 'string' && answer.length <= 800,
-      ) ||
-      typeof body.assisted !== 'boolean'
-    )
+    const mode = challenge.mode;
+    const legacy = mode !== 'practice' && mode !== 'check';
+    const answersValid = legacy
+      ? [body.recallAnswer, body.useAnswer].every(
+          (answer) => typeof answer === 'string' && answer.length <= 800,
+        )
+      : typeof body.answer === 'string' && body.answer.length <= 800;
+    if (!answersValid || typeof body.assisted !== 'boolean')
       throw new RequestError(
         400,
         'Each answer must be no more than 800 characters.',
@@ -317,10 +331,18 @@ export async function POST(request: Request) {
         'This expression changed or is no longer available. Start a new check.',
       );
     await quota();
-    const recallAnswer = (body.recallAnswer as string).trim(),
-      useAnswer = (body.useAnswer as string).trim();
+    const singleAnswer = legacy ? '' : (body.answer as string).trim();
+    const recallAnswer = legacy
+      ? (body.recallAnswer as string).trim()
+      : singleAnswer;
+    const useAnswer = legacy
+      ? (body.useAnswer as string).trim()
+      : mode === 'check'
+        ? singleAnswer
+        : '';
     const feedback = await gradeAssessment(
       {
+        mode: mode ?? 'legacy',
         level,
         target,
         recall: { prompt: challenge.recallPrompt, answer: recallAnswer },
@@ -334,9 +356,17 @@ export async function POST(request: Request) {
       apiKey,
       model,
       request.signal,
+      mode ?? 'legacy',
     );
+    if (mode === 'practice')
+      feedback.use = {
+        verdict: 'uncertain',
+        explanation: 'Contextual use was not checked in this practice.',
+        example: target.example || target.spanish,
+      };
     // Explicit skips cannot be upgraded by an upstream grading error.
-    for (const field of ['recall', 'use'] as const)
+    for (const field of ['recall', 'use'] as const) {
+      if (mode === 'practice' && field === 'use') continue;
       if (!(field === 'recall' ? recallAnswer : useAnswer))
         feedback[field] = {
           verdict: 'incorrect',
@@ -344,6 +374,7 @@ export async function POST(request: Request) {
             'You selected “I don’t know”. Revisit this expression before another assessment.',
           example: field === 'recall' ? target.spanish : challenge.sample,
         };
+    }
     const { data: currentProfile, error: currentProfileError } = await client
       .from('profiles')
       .select('proficiency_level')
@@ -382,6 +413,7 @@ export async function POST(request: Request) {
       disputed: false,
       retained: !!retained,
       reviewAt: new Date(now + (retained ? 7 : 1) * DAY_MS).toISOString(),
+      ...(mode ? { mode } : {}),
     };
     const receipt: AssessmentReceipt = {
       version: ASSESSMENT_VERSION,

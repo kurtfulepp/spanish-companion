@@ -41,6 +41,8 @@ import {
   type ConversationReply,
   type ConversationReview,
 } from '@/lib/conversation';
+import { directFeedback, personalizeFeedback } from '@/lib/feedback-language';
+import { AnswerDifference } from './answer-difference';
 import styles from './conversation-practice.module.css';
 import { PracticeTimeTracker } from './practice-time-tracker';
 
@@ -48,9 +50,11 @@ type Session = { topic: ConversationTopic; scenario: ConversationScenario };
 export function ConversationPractice({
   level,
   voice,
+  displayName,
 }: {
   level: CEFRLevel;
   voice: VoicePreference;
+  displayName?: string | null;
 }) {
   const [catalog, setCatalog] = useState<ConversationCatalog | null>(null);
   const [loading, setLoading] = useState(true);
@@ -255,7 +259,13 @@ export function ConversationPractice({
   const last = messages.at(-1);
   return (
     <div className={styles.root}>
-      <PracticeTimeTracker active={!!session && messages.length > 0 && !review && !busy && !leaveOpen} area="conversation" level={level} />
+      <PracticeTimeTracker
+        active={
+          !!session && messages.length > 0 && !review && !busy && !leaveOpen
+        }
+        area="conversation"
+        level={level}
+      />
       <section className={`brand-hero ${styles.hero}`}>
         <p className={styles.eyebrow}>
           <MessageCircle size={16} />
@@ -329,9 +339,8 @@ export function ConversationPractice({
             <div className={styles.panel}>
               <h3>Practice a topic to start</h3>
               <p>
-                Complete an assessment in a vocabulary
-                topic at {level}. Its related conversation will then be
-                available here.
+                Complete an assessment in a vocabulary topic at {level}. Its
+                related conversation will then be available here.
               </p>
               <a className={styles.link} href="/vocabulary">
                 Open Vocabulary <ArrowRight size={16} />
@@ -427,8 +436,9 @@ export function ConversationPractice({
             <details className={`${styles.details} ${styles.panel}`}>
               <summary>Topics to practice first</summary>
               <p>
-                Opening a topic does not unlock conversation. Complete a vocabulary assessment or save a practice
-                response at your current level.
+                Opening a topic does not unlock conversation. Complete a
+                vocabulary assessment or save a practice response at your
+                current level.
               </p>
               <div className={styles.lockedTopics}>
                 {topics
@@ -676,10 +686,21 @@ export function ConversationPractice({
             <article className={styles.review}>
               <p className={styles.metadata}>AI review · {level}</p>
               <h2>Conversation review</h2>
-              <p>{review.summary}</p>
+              <p>{personalizeFeedback(review.summary, displayName)}</p>
               {review.corrections.length > 0 ? (
                 review.corrections.map((c, index) => (
-                  <div key={index} className={styles.correction}>
+                  <div
+                    key={index}
+                    className={styles.correction}
+                    data-state={
+                      c.verdict === 'correct_with_fix' ? 'correct' : 'incorrect'
+                    }
+                  >
+                    <strong className={styles.correctionStatus}>
+                      {c.verdict === 'correct_with_fix'
+                        ? 'Correct — small fix'
+                        : 'Needs practice'}
+                    </strong>
                     <p>
                       <strong>Your response</strong>
                       <span lang="es">{c.original}</span>
@@ -688,7 +709,11 @@ export function ConversationPractice({
                       <strong>Suggested Spanish</strong>
                       <span lang="es">{c.suggestion}</span>
                     </p>
-                    <p>{c.explanation}</p>
+                    <AnswerDifference
+                      answer={c.original}
+                      correction={c.suggestion}
+                    />
+                    <p>{directFeedback(c.explanation)}</p>
                   </div>
                 ))
               ) : (
@@ -698,7 +723,7 @@ export function ConversationPractice({
                 </p>
               )}
               <h3>What to practice next</h3>
-              <p>{review.nextPractice}</p>
+              <p>{directFeedback(review.nextPractice)}</p>
               <p className={styles.metadata}>
                 This review does not update your vocabulary ratings or assess
                 pronunciation. It is not saved.

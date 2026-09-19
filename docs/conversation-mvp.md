@@ -9,7 +9,7 @@ Implemented locally on 2026-09-07. This document describes the first version, no
 - See which practiced expressions inform the exchange. Up to eight are used per session, prioritizing material needing practice.
 - Speak or type free responses to an AI partner. Tap Speak, stop recording, check the editable transcription, and send. Replies play aloud by default; a switch and individual Listen controls remain available. The partner gets the preceding exchange and adapts its reply. A session allows six learner turns and can be reviewed earlier.
 - Reveal English translations or English hints, and play the Spanish partner responses using the existing speech controls.
-- Read a short AI review and up to three corrections tied to exact excerpts from their own messages. Return to the matching vocabulary topic for practice.
+- Read a short AI review and up to three corrections tied to exact excerpts from their own messages. Corrections distinguish **Correct — small fix** from **Needs practice**, using target-sensitive meaning rather than edit distance. Return to the matching vocabulary topic for practice.
 - Enter the matching conversation group from the vocabulary gap-check completion screen.
 
 ## Explicit limits shown before starting

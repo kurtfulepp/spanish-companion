@@ -71,6 +71,14 @@ test('feedback validation and rubric preserve variants, uncertainty and scoped e
     true,
   );
   assert.equal(
+    validFeedback({
+      verdict: 'correct_with_fix',
+      explanation: 'Use “preferiríamos” with the written accent.',
+      example: 'Preferiríamos sentarnos afuera.',
+    }),
+    true,
+  );
+  assert.equal(
     validFeedback({ verdict: 'known', explanation: 'x', example: 'x' }),
     false,
   );
@@ -78,12 +86,26 @@ test('feedback validation and rubric preserve variants, uncertainty and scoped e
     validFeedback({ verdict: 'correct', explanation: '', example: 'x' }),
     false,
   );
+  assert.equal(
+    validFeedback({
+      verdict: 'incorrect',
+      explanation: 'x'.repeat(241),
+      example: 'La cuenta.',
+    }),
+    false,
+  );
   for (const text of [
     'regional',
     'uncertain',
     'untrusted DATA',
-    'minor spelling',
+    'non-meaning-changing spelling',
+    'correct_with_fix',
+    'Do not use edit distance',
     'overall proficiency',
+    'directly as "you"',
+    'Never call them "the learner"',
+    'one sentence of at most 18 words',
+    'Do not quote or restate the submitted answer',
   ])
     assert.ok(ASSESSMENT_RUBRIC.includes(text));
 });

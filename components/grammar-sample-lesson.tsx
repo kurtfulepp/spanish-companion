@@ -87,7 +87,11 @@ export function GrammarSampleLesson({
 
   return (
     <div className={styles.content}>
-      <PracticeTimeTracker active={attempt.phase === 'practice'} area="grammar" level={level} />
+      <PracticeTimeTracker
+        active={attempt.phase === 'practice'}
+        area="grammar"
+        level={level}
+      />
       <Button variant="ghost" onClick={onBack} className={styles.back}>
         <ArrowLeft size={16} />
         All grammar topics
@@ -200,7 +204,7 @@ export function GrammarSampleLesson({
                   <strong>
                     {correct
                       ? 'Correct'
-                      : `The answer is “${question.options[question.answer]}”`}
+                      : `Needs practice · Use “${question.options[question.answer]}”`}
                   </strong>
                   <p>{question.explanation}</p>
                 </div>
@@ -263,7 +267,7 @@ export function GrammarSampleLesson({
                 return (
                   <section key={questionIndex}>
                     <span className={styles.answerStatus}>
-                      {answer === item.answer ? 'Correct' : 'To review'}
+                      {answer === item.answer ? 'Correct' : 'Needs practice'}
                     </span>
                     <h3 lang="es">
                       {item.sentence.replace('___', item.options[item.answer])}

@@ -361,10 +361,27 @@
   margin-top: 22px;
 }
 .correction {
-  border-top: 1px solid var(--brand-border);
-  padding: 18px 0;
+  border: 1px solid var(--brand-border);
+  border-radius: 16px;
+  padding: 18px;
   margin-top: 18px;
   line-height: 1.6;
+}
+.correction[data-state='correct'] {
+  border-color: color-mix(
+    in srgb,
+    var(--brand-turquoise) 48%,
+    var(--brand-border)
+  );
+  background: color-mix(in srgb, var(--brand-turquoise) 13%, white);
+}
+.correction[data-state='incorrect'] {
+  border-color: color-mix(
+    in srgb,
+    var(--brand-flag-red) 38%,
+    var(--brand-border)
+  );
+  background: color-mix(in srgb, var(--brand-flag-red) 8%, white);
 }
 .correction p {
   margin: 6px 0;
@@ -373,6 +390,10 @@
 .correction strong {
   display: block;
   font-size: 0.875rem;
+}
+.correctionStatus {
+  margin-bottom: 12px;
+  color: var(--brand-ink-strong);
 }
 .review .metadata {
   margin-top: 14px;

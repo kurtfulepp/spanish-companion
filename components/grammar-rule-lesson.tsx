@@ -121,7 +121,15 @@ export function GrammarRuleLesson({
 
   return (
     <div className={styles.content}>
-      <PracticeTimeTracker active={!previewOnly && saveState !== 'saving' && (stage === 'check' || stage === 'practice' || stage === 'write')} area="grammar" level={lesson.level} />
+      <PracticeTimeTracker
+        active={
+          !previewOnly &&
+          saveState !== 'saving' &&
+          (stage === 'check' || stage === 'practice' || stage === 'write')
+        }
+        area="grammar"
+        level={lesson.level}
+      />
       <Button variant="ghost" className={styles.back} onClick={onBack}>
         <ArrowLeft size={16} /> {backLabel}
       </Button>
@@ -361,9 +369,7 @@ export function GrammarRuleLesson({
                 <>
                   <output className={styles.feedback} data-correct={correct}>
                     <strong>
-                      {correct
-                        ? 'Correct for this task'
-                        : 'Compare your answer'}
+                      {correct ? 'Correct for this task' : 'Needs practice'}
                     </strong>
                     <p>{exercise.explanation}</p>
                     {!correct && (
@@ -503,7 +509,7 @@ export function GrammarRuleLesson({
                       Your answer: <span lang="es">{answers[item.id]}</span> ·{' '}
                       {checkGrammarAnswer(item, answers[item.id])
                         ? 'Correct for this task'
-                        : 'Review'}
+                        : 'Needs practice'}
                     </p>
                     <p>{item.explanation}</p>
                   </div>

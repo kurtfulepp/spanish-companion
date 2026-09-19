@@ -19,6 +19,7 @@ export default function ConversationPage() {
           key={`${userId}:${profile.proficiencyLevel}`}
           level={profile.proficiencyLevel}
           voice={profile.voicePreference}
+          displayName={profile.displayName}
         />
       )}
     </main>

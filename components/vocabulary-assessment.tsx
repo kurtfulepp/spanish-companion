@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, RotateCcw } from 'lucide-react';
 import { useLearnerProfile } from './learner-profile-provider';
 import { PracticeTimeTracker } from './practice-time-tracker';
+import { AnswerDifference } from './answer-difference';
 import {
   assessmentQueue,
   type AssessmentScope,
@@ -11,12 +12,21 @@ import {
   type AssessmentChallenge,
   type AssessmentResult,
 } from '@/lib/vocabulary-assessment';
+import {
+  actionableCorrection,
+  directFeedback,
+  feedbackVerdictLabel,
+  feedbackVisualState,
+  isPassingFeedbackVerdict,
+  personalizeFeedback,
+} from '@/lib/feedback-language';
 import styles from './vocabulary-assessment.module.css';
 
 export function VocabularyAssessment(props: {
   scope: AssessmentScope;
   targetId?: string;
   recentlyStudied?: boolean;
+  initialPrompt?: string;
   onExit?: () => void;
 }) {
   const { userId, profile } = useLearnerProfile();
@@ -24,6 +34,7 @@ export function VocabularyAssessment(props: {
     <AssessmentSession
       key={`${userId}:${profile.proficiencyLevel}:${JSON.stringify(props.scope)}:${props.targetId ?? ''}`}
       {...props}
+      displayName={profile.displayName}
     />
   );
 }
@@ -31,12 +42,16 @@ function AssessmentSession({
   scope,
   targetId,
   recentlyStudied = false,
+  initialPrompt,
   onExit,
+  displayName,
 }: {
   scope: AssessmentScope;
   targetId?: string;
   recentlyStudied?: boolean;
+  initialPrompt?: string;
   onExit?: () => void;
+  displayName?: string | null;
 }) {
   const [catalog, setCatalog] = useState<AssessmentCatalog | null>(null);
   const [reload, setReload] = useState(0);
@@ -45,18 +60,19 @@ function AssessmentSession({
     ? `themeId=${encodeURIComponent(scope.themeId)}`
     : `listId=${encodeURIComponent(scope.listId!)}`;
   const [error, setError] = useState('');
-  const [busy, setBusy] = useState(Boolean(targetId));
+  const [busy, setBusy] = useState(false);
+  const [preparing, setPreparing] = useState(Boolean(targetId));
   const [challenge, setChallenge] = useState<AssessmentChallenge | null>(null);
-  const [stage, setStage] = useState<'overview' | 'recall' | 'use' | 'result'>(
-    'overview',
+  const [stage, setStage] = useState<'overview' | 'answer' | 'result'>(
+    recentlyStudied && initialPrompt ? 'answer' : 'overview',
   );
   const [recall, setRecall] = useState('');
-  const [use, setUse] = useState('');
   const [assisted, setAssisted] = useState(recentlyStudied);
   const [result, setResult] = useState<AssessmentResult | null>(null);
   const action = useRef<AbortController | null>(null);
   const pending = useRef(false);
   const heading = useRef<HTMLHeadingElement>(null);
+  const answerField = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
     heading.current?.focus();
   }, [stage]);
@@ -64,13 +80,33 @@ function AssessmentSession({
     const controller = new AbortController();
     void (async () => {
       try {
-        const response = await fetch(
+        const catalogRequest = fetch(
           `/api/vocabulary/assessment?${queryString}`,
           {
             cache: 'no-store',
             signal: controller.signal,
           },
         );
+        const requestScope = Object.fromEntries(
+          new URLSearchParams(queryString),
+        );
+        const startRequest = targetId
+          ? fetch('/api/vocabulary/assessment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                action: 'start',
+                ...requestScope,
+                targetId,
+                assisted: recentlyStudied,
+              }),
+              signal: controller.signal,
+            })
+          : null;
+        const [response, startResponse] = await Promise.all([
+          catalogRequest,
+          startRequest,
+        ]);
         const data = (await response.json()) as AssessmentCatalog & {
           error?: string;
         };
@@ -89,20 +125,8 @@ function AssessmentSession({
             'This expression is unavailable at your current level.',
           );
 
-        const requestScope = Object.fromEntries(
-          new URLSearchParams(queryString),
-        );
-        const startResponse = await fetch('/api/vocabulary/assessment', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'start',
-            ...requestScope,
-            targetId,
-            assisted: recentlyStudied,
-          }),
-          signal: controller.signal,
-        });
+        if (!startResponse)
+          throw new Error('The expression check could not be prepared.');
         const startData = (await startResponse.json()) as {
           error?: string;
           challenge?: AssessmentChallenge;
@@ -116,10 +140,9 @@ function AssessmentSession({
         if (controller.signal.aborted) return;
         setChallenge(startData.challenge);
         setRecall('');
-        setUse('');
         setResult(null);
         setAssisted(recentlyStudied);
-        setStage('recall');
+        setStage('answer');
       } catch (failure) {
         if (!controller.signal.aborted)
           setError(
@@ -128,7 +151,7 @@ function AssessmentSession({
               : 'Your assessments could not be loaded.',
           );
       } finally {
-        if (targetId && !controller.signal.aborted) setBusy(false);
+        if (targetId && !controller.signal.aborted) setPreparing(false);
       }
     })();
     return () => {
@@ -180,20 +203,18 @@ function AssessmentSession({
       if (!data.challenge) throw new Error('A check could not be prepared.');
       setChallenge(data.challenge);
       setRecall('');
-      setUse('');
       setResult(null);
-      setAssisted(recentlyStudied);
-      setStage('recall');
+      setAssisted(false);
+      setStage('answer');
     });
   }
-  function submit(useAnswer: string) {
+  function submit(answer: string) {
     if (!challenge) return;
     void run(async () => {
       const data = await post({
         action: 'submit',
         token: challenge.token,
-        recallAnswer: recall,
-        useAnswer,
+        answer,
         assisted,
       });
       if (!data.result)
@@ -214,6 +235,19 @@ function AssessmentSession({
       );
     });
   }
+  function insertCharacter(character: string) {
+    const field = answerField.current;
+    const start = field?.selectionStart ?? recall.length;
+    const end = field?.selectionEnd ?? start;
+    setRecall(`${recall.slice(0, start)}${character}${recall.slice(end)}`);
+    requestAnimationFrame(() => {
+      answerField.current?.focus();
+      answerField.current?.setSelectionRange(
+        start + character.length,
+        start + character.length,
+      );
+    });
+  }
   const known =
     catalog?.items.filter((item) => item.status === 'known').length ?? 0;
   const needs =
@@ -227,15 +261,23 @@ function AssessmentSession({
       ) ?? assessmentQueue(catalog.items, now)[0])
     : null;
   const statusLabel =
-    result?.status === 'known'
-      ? 'Known'
-      : result?.status === 'needs_practice'
-        ? 'Needs practice'
-        : 'Not assessed';
+    result?.mode === 'practice'
+      ? result.recall.verdict === 'correct'
+        ? 'Practice complete'
+        : result.recall.verdict === 'correct_with_fix'
+          ? 'Correct — small fix'
+          : result.recall.verdict === 'incorrect'
+            ? 'Needs practice'
+            : 'Review needed'
+      : result?.status === 'known'
+        ? 'Known'
+        : result?.status === 'needs_practice'
+          ? 'Needs practice'
+          : 'Not assessed';
   return (
-    <section className={styles.panel} aria-busy={busy}>
+    <section className={styles.panel} aria-busy={busy || preparing}>
       <PracticeTimeTracker
-        active={!!challenge && !busy && (stage === 'recall' || stage === 'use')}
+        active={stage === 'answer' && !busy}
         area="vocabulary"
       />
       <div className={styles.top}>
@@ -249,7 +291,7 @@ function AssessmentSession({
         )}
         <span>
           {catalog?.level} ·{' '}
-          {targetId ? '1 expression · 2 steps' : 'Vocabulary assessment'}
+          {targetId ? '1 expression · 1 response' : 'Vocabulary assessment'}
         </span>
       </div>
       {error && (
@@ -259,7 +301,7 @@ function AssessmentSession({
             <button
               onClick={() => {
                 setError('');
-                if (targetId) setBusy(true);
+                if (targetId) setPreparing(true);
                 setReload((value) => value + 1);
               }}
             >
@@ -268,7 +310,9 @@ function AssessmentSession({
           )}
         </div>
       )}
-      {!catalog && !error && <output>Loading assessments…</output>}
+      {!catalog && !error && stage === 'overview' && (
+        <output>Loading assessments…</output>
+      )}
       {targetId && stage === 'overview' && !error && (
         <output>Preparing expression check…</output>
       )}
@@ -278,8 +322,8 @@ function AssessmentSession({
             {catalog.title}
           </h1>
           <p>
-            Recall an expression, then use it in a new situation. Both answers
-            are checked before your result is saved.
+            Respond once to a fresh situation. Meaning, Spanish form, and use in
+            context are checked separately before the result is saved.
           </p>
           <div className={styles.counts}>
             <div>
@@ -350,43 +394,32 @@ function AssessmentSession({
           </details>
         </>
       )}
-      {(stage === 'recall' || stage === 'use') && challenge && (
+      {stage === 'answer' && (challenge || initialPrompt) && (
         <form
           onSubmit={(event) => {
             event.preventDefault();
-            if (stage === 'recall') setStage('use');
-            else submit(use);
+            submit(recall);
           }}
         >
-          <div
-            className={styles.steps}
-            aria-label={`Step ${stage === 'recall' ? 1 : 2} of 2`}
-          >
-            <span className={stage === 'recall' ? styles.active : ''}>
-              1 · Recall
-            </span>
-            <span className={stage === 'use' ? styles.active : ''}>
-              2 · Use
+          <div className={styles.steps} aria-label="One response">
+            <span className={styles.active}>
+              {recentlyStudied ? 'Practice recall' : 'Independent check'}
             </span>
           </div>
           <h1 ref={heading} tabIndex={-1}>
-            {stage === 'recall'
-              ? 'How would you say this?'
-              : 'Use it in context'}
+            {recentlyStudied ? 'How would you say this?' : 'Respond in Spanish'}
           </h1>
           <p className={styles.prompt}>
-            {stage === 'recall' ? challenge.recallPrompt : challenge.usePrompt}
+            {challenge?.mode === 'check'
+              ? challenge.usePrompt
+              : challenge?.recallPrompt || initialPrompt}
           </p>
           <label htmlFor="assessment-answer">Your answer in Spanish</label>
           <textarea
-            key={stage}
+            ref={answerField}
             id="assessment-answer"
-            value={stage === 'recall' ? recall : use}
-            onChange={(event) =>
-              stage === 'recall'
-                ? setRecall(event.target.value)
-                : setUse(event.target.value)
-            }
+            value={recall}
+            onChange={(event) => setRecall(event.target.value)}
             maxLength={800}
             rows={4}
             disabled={busy}
@@ -394,51 +427,59 @@ function AssessmentSession({
             spellCheck={false}
             autoCapitalize="sentences"
           />
+          <div className={styles.accentKeys} aria-label="Spanish characters">
+            {['á', 'é', 'í', 'ó', 'ú', 'ü', 'ñ', '¿', '¡'].map((character) => (
+              <button
+                key={character}
+                type="button"
+                onClick={() => insertCharacter(character)}
+                disabled={busy}
+                aria-label={`Insert ${character}`}
+              >
+                {character}
+              </button>
+            ))}
+          </div>
           <p className={styles.note}>
             Equivalent Spanish expressions and regional variants are accepted.
-            Feedback appears after both answers.
+            Meaning, spelling, and use are reviewed separately.
           </p>
-          {stage === 'use' &&
-            (recentlyStudied ? (
-              <p className={styles.help}>
-                You just learned this expression. This check will be saved as
-                assisted practice; a later independent review can mark it Known.
-              </p>
-            ) : (
-              <label className={styles.help}>
-                <input
-                  type="checkbox"
-                  checked={assisted}
-                  onChange={(event) => setAssisted(event.target.checked)}
-                  disabled={busy}
-                />
-                I used help or just reviewed the answer. Save this as practice.
-              </label>
-            ))}
+          {recentlyStudied ? (
+            <p className={styles.help}>
+              This is assisted practice. A later independent check can mark the
+              expression Known.
+            </p>
+          ) : (
+            <label className={styles.help}>
+              <input
+                type="checkbox"
+                checked={assisted}
+                onChange={(event) => setAssisted(event.target.checked)}
+                disabled={busy}
+              />
+              I used help. Save this as practice instead of an independent
+              result.
+            </label>
+          )}
           <div className={styles.actions}>
             <button
               type="submit"
               className={styles.primary}
-              disabled={busy || !(stage === 'recall' ? recall : use).trim()}
+              disabled={busy || preparing || !challenge || !recall.trim()}
             >
               {busy
                 ? 'Checking and saving…'
-                : stage === 'recall'
-                  ? 'Continue'
-                  : 'Check answers'}
+                : preparing || !challenge
+                  ? 'Preparing…'
+                  : 'Check answer'}
               <ArrowRight size={18} />
             </button>
             <button
               type="button"
-              disabled={busy}
+              disabled={busy || preparing || !challenge}
               onClick={() => {
-                if (stage === 'recall') {
-                  setRecall('');
-                  setStage('use');
-                } else {
-                  setUse('');
-                  submit('');
-                }
+                setRecall('');
+                submit('');
               }}
             >
               I don’t know
@@ -450,47 +491,93 @@ function AssessmentSession({
         <>
           <span className={styles.resultLabel}>
             <Check size={17} />
-            {assisted ? 'Saved practice' : 'Saved result'} · AI-assessed
+            {result.mode === 'practice' || assisted
+              ? 'Saved practice'
+              : 'Saved result'}{' '}
+            · AI-assessed
           </span>
           <h1 ref={heading} tabIndex={-1}>
             {statusLabel}
           </h1>
           <p>
-            {result.disputed
-              ? 'You challenged this result. It no longer contributes to your knowledge or practice-gap counts. Take a fresh check to reassess it.'
-              : assisted
-                ? 'This immediate check was saved as assisted practice. A later independent review can establish Known.'
-                : result.status === 'not_assessed'
-                  ? 'This check did not establish an independent result. Assisted practice and uncertain answers are excluded from Known and Needs practice.'
-                  : result.status === 'known'
-                    ? result.retained
-                      ? 'You demonstrated recall and use again after a delay.'
-                      : 'You demonstrated recall and use in this check. A later review will check retention.'
-                    : 'This check identified a vocabulary gap. Review the feedback, then try a fresh check.'}
+            {personalizeFeedback(
+              result.disputed
+                ? 'You challenged this result. It no longer affects your progress counts. Take a fresh check to reassess it.'
+                : result.mode === 'practice' || assisted
+                  ? 'This was saved as assisted practice. Complete a later independent check to establish Known.'
+                  : result.status === 'not_assessed'
+                    ? 'This result needs another check. Assisted or uncertain answers do not count as Known or Needs practice.'
+                    : result.status === 'known'
+                      ? result.recall.verdict === 'correct_with_fix' ||
+                        result.use.verdict === 'correct_with_fix'
+                        ? 'You conveyed the target clearly. Review the small fix below.'
+                        : result.retained
+                          ? 'You recalled and used this again after a delay.'
+                          : 'You recalled and used this correctly. A later review will check retention.'
+                      : 'Review the fixes below, then try a fresh check.',
+              displayName,
+            )}
           </p>
-          {(['recall', 'use'] as const).map((kind) => (
-            <div key={kind} className={styles.feedback}>
-              <h2>
-                {kind === 'recall' ? 'Recall' : 'Use in context'} ·{' '}
-                {result[kind].verdict === 'correct'
-                  ? 'Correct'
-                  : result[kind].verdict === 'incorrect'
-                    ? 'Needs practice'
-                    : 'Needs another check'}
-              </h2>
-              <p>
-                {kind === 'recall' ? result.recallPrompt : result.usePrompt}
-              </p>
-              <blockquote>
-                {(kind === 'recall' ? result.recallAnswer : result.useAnswer) ||
-                  'I don’t know'}
-              </blockquote>
-              <p>{result[kind].explanation}</p>
-              <p>
-                <strong>Example:</strong> {result[kind].example}
-              </p>
-            </div>
-          ))}
+          {result.mode ? (
+            <SingleResponseFeedback result={result} displayName={displayName} />
+          ) : (
+            (['recall', 'use'] as const).map((kind) => {
+              const feedback = result[kind];
+              const feedbackLabel =
+                feedback.verdict === 'correct'
+                  ? 'Why it works'
+                  : feedback.verdict === 'incorrect' ||
+                      feedback.verdict === 'correct_with_fix'
+                    ? 'Fix'
+                    : 'Check';
+              const exampleLabel =
+                feedback.verdict === 'incorrect' ||
+                feedback.verdict === 'correct_with_fix'
+                  ? 'Use'
+                  : feedback.verdict === 'uncertain'
+                    ? 'Possible answer'
+                    : 'Example';
+              return (
+                <div
+                  key={kind}
+                  className={styles.feedback}
+                  data-state={feedbackVisualState(feedback.verdict)}
+                >
+                  <h2>
+                    {kind === 'recall' ? 'Recall' : 'Use in context'} ·{' '}
+                    {feedbackVerdictLabel(feedback.verdict)}
+                  </h2>
+                  <p>
+                    {kind === 'recall' ? result.recallPrompt : result.usePrompt}
+                  </p>
+                  <blockquote>
+                    {(kind === 'recall'
+                      ? result.recallAnswer
+                      : result.useAnswer) || 'I don’t know'}
+                  </blockquote>
+                  <p
+                    className={styles.feedbackMessage}
+                    data-verdict={feedback.verdict}
+                  >
+                    <strong>{feedbackLabel}</strong>
+                    <span>
+                      {personalizeFeedback(
+                        feedback.verdict === 'incorrect' ||
+                          feedback.verdict === 'correct_with_fix'
+                          ? actionableCorrection(feedback.explanation)
+                          : directFeedback(feedback.explanation),
+                        displayName,
+                      )}
+                    </span>
+                  </p>
+                  <p className={styles.feedbackExample}>
+                    <strong>{exampleLabel}</strong>
+                    <span lang="es">{feedback.example}</span>
+                  </p>
+                </div>
+              );
+            })
+          )}
           <p className={styles.note}>
             Saved {new Date(result.savedAt).toLocaleDateString()}.{' '}
             {result.status === 'known' &&
@@ -551,5 +638,90 @@ function AssessmentSession({
         </>
       )}
     </section>
+  );
+}
+
+function feedbackCopy(feedback: AssessmentResult['recall']) {
+  return feedback.verdict === 'incorrect' ||
+    feedback.verdict === 'correct_with_fix'
+    ? actionableCorrection(feedback.explanation)
+    : directFeedback(feedback.explanation);
+}
+
+function SingleResponseFeedback({
+  result,
+  displayName,
+}: {
+  result: AssessmentResult;
+  displayName?: string | null;
+}) {
+  const practice = result.mode === 'practice';
+  const answer = practice ? result.recallAnswer : result.useAnswer;
+  const prompt = practice ? result.recallPrompt : result.usePrompt;
+  const state =
+    result.recall.verdict === 'incorrect' ||
+    (!practice && result.use.verdict === 'incorrect')
+      ? 'incorrect'
+      : isPassingFeedbackVerdict(result.recall.verdict) &&
+          (practice || isPassingFeedbackVerdict(result.use.verdict))
+        ? 'correct'
+        : 'uncertain';
+  const smallFix =
+    result.recall.verdict === 'correct_with_fix' ||
+    (!practice && result.use.verdict === 'correct_with_fix');
+  const example = practice ? result.recall.example : result.use.example;
+
+  return (
+    <div className={styles.feedback} data-state={state}>
+      <h2>
+        Answer review ·{' '}
+        {state === 'correct'
+          ? smallFix
+            ? 'Correct — small fix'
+            : 'Correct'
+          : state === 'incorrect'
+            ? 'Needs practice'
+            : 'Needs another check'}
+      </h2>
+      <p>{prompt}</p>
+      <blockquote>{answer || 'I don’t know'}</blockquote>
+      <AnswerDifference answer={answer} correction={result.recall.example} />
+      <FeedbackDimension
+        label="Meaning and form"
+        feedback={result.recall}
+        displayName={displayName}
+      />
+      {!practice && (
+        <FeedbackDimension
+          label="Use in context"
+          feedback={result.use}
+          displayName={displayName}
+        />
+      )}
+      <p className={styles.feedbackExample}>
+        <strong>{state === 'incorrect' || smallFix ? 'Use' : 'Example'}</strong>
+        <span lang="es">{example}</span>
+      </p>
+    </div>
+  );
+}
+
+function FeedbackDimension({
+  label,
+  feedback,
+  displayName,
+}: {
+  label: string;
+  feedback: AssessmentResult['recall'];
+  displayName?: string | null;
+}) {
+  return (
+    <div className={styles.dimension} data-verdict={feedback.verdict}>
+      <div>
+        <strong>{label}</strong>
+        <span>{feedbackVerdictLabel(feedback.verdict)}</span>
+      </div>
+      <p>{personalizeFeedback(feedbackCopy(feedback), displayName)}</p>
+    </div>
   );
 }

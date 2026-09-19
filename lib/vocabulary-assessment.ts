@@ -1,10 +1,15 @@
 import type { CEFRLevel } from './cefr';
+import {
+  isPassingFeedbackVerdict,
+  type LearningFeedbackVerdict,
+} from './feedback-language';
 
 export type AssessmentScope =
   | { themeId: string; listId?: never }
   | { listId: string; themeId?: never };
 export type AssessmentStatus = 'known' | 'needs_practice' | 'not_assessed';
-export type AssessmentVerdict = 'correct' | 'incorrect' | 'uncertain';
+export type AssessmentVerdict = LearningFeedbackVerdict;
+export type AssessmentMode = 'practice' | 'check';
 export type AssessmentFeedback = {
   verdict: AssessmentVerdict;
   explanation: string;
@@ -25,6 +30,7 @@ export type AssessmentResult = {
   disputed: boolean;
   reviewAt: string;
   retained: boolean;
+  mode?: AssessmentMode;
 };
 export type AssessmentItem = {
   id: string;
@@ -45,6 +51,7 @@ export type AssessmentChallenge = {
   token: string;
   recallPrompt: string;
   usePrompt: string;
+  mode: AssessmentMode;
 };
 export const ASSESSMENT_VERSION = 1;
 export const DAY_MS = 86_400_000;
@@ -53,7 +60,9 @@ export function assessmentStatus(
   use: AssessmentVerdict,
 ): AssessmentStatus {
   if (recall === 'incorrect' || use === 'incorrect') return 'needs_practice';
-  return recall === 'correct' && use === 'correct' ? 'known' : 'not_assessed';
+  return isPassingFeedbackVerdict(recall) && isPassingFeedbackVerdict(use)
+    ? 'known'
+    : 'not_assessed';
 }
 export function assessmentQueue(items: AssessmentItem[], now = Date.now()) {
   const priority = (item: AssessmentItem) =>

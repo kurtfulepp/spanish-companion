@@ -73,8 +73,7 @@ const request = (body) =>
 const correct = (token) => ({
   action: 'submit',
   token,
-  recallAnswer: 'La cuenta, por favor.',
-  useAnswer: '¿Me trae la cuenta, por favor?',
+  answer: '¿Me trae la cuenta, por favor?',
   assisted: false,
 });
 function setup(options = {}) {
@@ -208,6 +207,11 @@ async function start(scope = { themeId: 'dining-out', targetId: itemId }) {
 
 test('binary decisions preserve uncertainty and never equate lack of evidence with failure', () => {
   assert.equal(assessmentStatus('correct', 'correct'), 'known');
+  assert.equal(assessmentStatus('correct_with_fix', 'correct'), 'known');
+  assert.equal(
+    assessmentStatus('correct_with_fix', 'correct_with_fix'),
+    'known',
+  );
   assert.equal(assessmentStatus('uncertain', 'correct'), 'not_assessed');
   assert.equal(assessmentStatus('incorrect', 'uncertain'), 'needs_practice');
 });
@@ -296,7 +300,7 @@ test('new and legacy-rated vocabulary start unassessed; invalid receipts are ign
   assert.equal(result.items[0].status, 'not_assessed');
   assert.equal(result.items[0].latest, null);
 });
-test('two correct responses save a verified result; retry keeps the first result without another AI call', async () => {
+test('one correct contextual response saves a verified result; retry keeps the first result without another AI call', async () => {
   const state = setup();
   const challenge = await start();
   const response = await POST(request(correct(challenge.token)));
@@ -310,9 +314,7 @@ test('two correct responses save a verified result; retry keeps the first result
   const calls = ai.calls;
   ai.recall = 'incorrect';
   const retried = await (
-    await POST(
-      request({ ...correct(challenge.token), recallAnswer: 'changed' }),
-    )
+    await POST(request({ ...correct(challenge.token), answer: 'changed' }))
   ).json();
   assert.equal(retried.result.status, 'known');
   assert.equal(ai.calls, calls);
@@ -327,40 +329,54 @@ test('two correct responses save a verified result; retry keeps the first result
     true,
   );
 });
-test('incorrect, uncertain, skipped and assisted answers have distinct outcomes', async () => {
-  for (const [verdict, assisted, expected] of [
-    ['incorrect', false, 'needs_practice'],
-    ['uncertain', false, 'not_assessed'],
-    ['correct', true, 'not_assessed'],
+test('small fixes, incorrect, uncertain, skipped and assisted answers have distinct outcomes', async () => {
+  for (const [verdict, expected] of [
+    ['correct_with_fix', 'known'],
+    ['incorrect', 'needs_practice'],
+    ['uncertain', 'not_assessed'],
   ]) {
     setup();
     const challenge = await start();
     ai.recall = verdict;
-    const result = await (
-      await POST(request({ ...correct(challenge.token), assisted }))
-    ).json();
+    const result = await (await POST(request(correct(challenge.token)))).json();
     assert.equal(result.result.status, expected);
   }
   setup();
-  const challenge = await start();
+  let challenge = await start();
   const result = await (
-    await POST(request({ ...correct(challenge.token), recallAnswer: '' }))
+    await POST(request({ ...correct(challenge.token), answer: '' }))
   ).json();
   assert.equal(result.result.status, 'needs_practice');
+
+  setup();
+  challenge = await start({
+    themeId: 'dining-out',
+    targetId: itemId,
+    assisted: true,
+  });
+  const practice = await (
+    await POST(request({ ...correct(challenge.token), assisted: true }))
+  ).json();
+  assert.equal(practice.result.status, 'not_assessed');
+  assert.equal(practice.result.mode, 'practice');
 });
-test('a post-learning check permits a repeated prompt but cannot become independent evidence', async () => {
+test('assisted practice starts without AI prompt generation and cannot become independent evidence', async () => {
   setup();
   const challenge = await start({
     themeId: 'dining-out',
     targetId: itemId,
     assisted: true,
   });
-  assert.equal(ai.requireFresh, false);
+  assert.equal(ai.calls, 0);
+  assert.equal(challenge.mode, 'practice');
+  assert.equal(challenge.usePrompt, '');
   assert.equal(openChallenge(challenge.token, secret).assisted, true);
   const result = await (
     await POST(request({ ...correct(challenge.token), assisted: false }))
   ).json();
   assert.equal(result.result.status, 'not_assessed');
+  assert.equal(result.result.mode, 'practice');
+  assert.equal(ai.calls, 1);
 });
 test('challenge cannot be used after profile/content changes, expiry or account substitution', async () => {
   for (const change of ['level', 'content', 'expiry', 'owner', 'tamper']) {

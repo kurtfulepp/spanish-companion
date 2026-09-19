@@ -2,7 +2,7 @@
 
 ## Status
 
-This plan is ready for use after the owner reviews and approves the Dining Out B2 direct-entry pilot. It does not authorize changing another topic, publishing content, or treating generated content as reviewed curriculum.
+The owner approved the shared Dining Out direct-entry interaction for every published topic on 19 September 2026. The common learning-card flow is implemented independently of catalog size. The content work below remains the plan for giving each topic a complete reviewed catalog; personal generated expressions are not reviewed curriculum.
 
 ## Topics remaining
 
@@ -25,15 +25,17 @@ This plan is ready for use after the owner reviews and approves the Dining Out B
 
 ## Implementation sequence
 
-### 1. Approve the Dining Out pilot
+### 1. Approve the Dining Out pilot — complete
 
 Review desktop and mobile entry, session clarity, study interaction, diagnostic return, full-expression browsing, and progress language. Record any change in the design system and Dining Out documentation before extracting shared code.
 
-### 2. Extract the shared topic-learning experience
+### 2. Extract the shared topic-learning experience — complete
 
-Replace Dining Out-specific presentation wiring with a shared component driven by topic ID, exact CEFR level, moments, versioned learning sets, and expression metadata. Keep topic artwork and contextual surface colors registered in the existing illustration and topic libraries.
+Dining Out-specific presentation wiring has been replaced with a shared component driven by topic ID, exact CEFR level, moments, optional versioned learning sets, and expression metadata. Topic artwork and contextual surface colors remain registered in the existing illustration and topic libraries.
 
-The shared component activates only when a complete, validated catalog exists for the learner's exact active level. It must never substitute B2 content for another profile level. Topics without a complete catalog retain their current experience.
+The shared component always enforces the learner's exact active level and never substitutes B2 content for another profile level. Complete catalogs show formal set progression. Topics without one use the same Learn → Practice → later independent Check flow over their available personal exact-level expressions, without claiming curriculum completion.
+
+Practice uses one assisted recall response after study. The later independent check uses one fresh contextual response and reports meaning/form and contextual use separately. Close accent or spelling errors show character-level repairs. Shared result surfaces distinguish correct (turquoise), incorrect (coral/red), and uncertain (gold) with explicit text labels.
 
 ### 3. Build and review level-specific catalogs
 

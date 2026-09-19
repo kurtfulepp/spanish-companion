@@ -297,6 +297,7 @@ test('review quotes must come from the learner, with no invented or partner quot
         original: 'Yo quiere sopa.',
         suggestion: 'Yo quiero sopa.',
         explanation: 'Use quiero with yo.',
+        verdict: 'incorrect',
       },
     ],
     nextPractice: 'Review ordering food.',
@@ -324,6 +325,47 @@ test('review quotes must come from the learner, with no invented or partner quot
     ).corrections,
     [],
   );
+  assert.throws(() =>
+    parseConversationOutput(
+      completed({
+        ...review,
+        corrections: [{ ...review.corrections[0], verdict: 'correct' }],
+      }),
+      true,
+      history,
+    ),
+  );
+});
+
+test('review instructions distinguish a small successful repair from a material error', async () => {
+  const review = {
+    summary: 'You completed the exchange.',
+    corrections: [
+      {
+        original: 'Yo quiere sopa.',
+        suggestion: 'Yo quiero sopa.',
+        explanation: 'Use quiero with yo.',
+        verdict: 'incorrect',
+      },
+    ],
+    nextPractice: 'Review present-tense agreement.',
+  };
+  const response = await conversationRequest(
+    request({
+      action: 'review',
+      messages: [...history, { role: 'assistant', content: reply.spanish }],
+    }),
+    deps({
+      fetcher: async (_url, init) => {
+        const sent = JSON.parse(init.body);
+        assert.match(sent.instructions, /correct_with_fix/);
+        assert.match(sent.instructions, /non-meaning-changing/);
+        assert.match(sent.instructions, /Do not use edit distance/);
+        return Response.json(completed(review));
+      },
+    }),
+  );
+  assert.equal(response.status, 200);
 });
 
 test('refusals, incomplete responses, malformed output, and upstream errors never become a fake conversation', async () => {

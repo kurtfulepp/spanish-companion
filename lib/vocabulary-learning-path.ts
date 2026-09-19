@@ -76,8 +76,13 @@ export function buildLearningPath<T extends LearningPathItem>(
     (catalog?.items ?? []).map((item) => [item.id, item]),
   );
   const setById = new Map(sets.map((set) => [set.id, set]));
+  const hasStructuredSets = sets.length > 0;
   const entries = items
-    .filter((item) => item.learning_set_id && setById.has(item.learning_set_id))
+    .filter(
+      (item) =>
+        !hasStructuredSets ||
+        (item.learning_set_id && setById.has(item.learning_set_id)),
+    )
     .map((item) => {
       const assessment = assessmentById.get(item.id) ?? null;
       return {
@@ -87,6 +92,8 @@ export function buildLearningPath<T extends LearningPathItem>(
       };
     })
     .sort((a, b) => {
+      if (!hasStructuredSets)
+        return (a.curriculum_position ?? 0) - (b.curriculum_position ?? 0);
       const aSet = setById.get(a.learning_set_id!)!;
       const bSet = setById.get(b.learning_set_id!)!;
       return (
@@ -114,12 +121,14 @@ export function buildLearningPath<T extends LearningPathItem>(
     });
   const activeSet =
     setProgress.find((set) => set.checkedCount < set.item_count) ?? null;
-  const newItems = activeSet
-    ? entries.filter(
-        (entry) =>
-          entry.learning_set_id === activeSet.id && entry.state === 'new',
-      )
-    : [];
+  const newItems = hasStructuredSets
+    ? activeSet
+      ? entries.filter(
+          (entry) =>
+            entry.learning_set_id === activeSet.id && entry.state === 'new',
+        )
+      : []
+    : entries.filter((entry) => entry.state === 'new');
   const learning = entries.filter((entry) => entry.state === 'learning');
   const due = entries.filter((entry) => entry.state === 'due');
   const known = entries.filter((entry) => entry.state === 'known');

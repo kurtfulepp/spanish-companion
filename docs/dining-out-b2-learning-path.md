@@ -2,7 +2,7 @@
 
 ## Status
 
-This is the first reviewable implementation of the larger topic-learning model. It applies only to **Dining Out at B2**. Other topics and levels continue to use the existing topic experience until the owner reviews this pilot and explicitly approves a wider rollout.
+This remains the first complete reviewed catalog implementation of the larger topic-learning model and applies to **Dining Out at B2**. On 19 September 2026, the owner approved reusing its direct-entry learning-card interaction across all published vocabulary topics. That shared interaction does not imply that the other topics yet have Dining Out's 120-expression reviewed catalog or five formal progression sets.
 
 The content follows the adopted [educational rubric](educational-rubric.md), [vocabulary assessment rules](vocabulary-assessment.md), and B2 communicative expectations in the [A1–C2 curriculum](grammar-curriculum-plan.md). It is owner-adopted product content, not independently teacher-approved curriculum.
 
@@ -37,7 +37,7 @@ Two secondary actions remain available without interrupting the default learning
 - **Browse all expressions** opens a read-only reference grouped by the six Dining Out moments. Browsing and listening do not change progress.
 - **Check what I already know** starts the independent topic diagnostic and returns to the learning session when closed.
 
-This direct-entry model applies only to the Dining Out B2 pilot until the owner reviews it. Other topics retain their current entry experience.
+This direct-entry model now applies to every published vocabulary topic. Topics without complete published set metadata open the same six-expression working session from their available exact-level expressions and omit the set-progress rail.
 
 ## Interaction rule
 
@@ -45,7 +45,7 @@ New cards begin with the English meaning and **Learn expression** as the primary
 
 The **Listen** control sits beside the revealed Spanish expression so its audio target is explicit. It does not appear detached in the card header.
 
-After learning, **Practice expression** opens the selected expression's two-step Recall → Use flow immediately. It does not pass through the topic assessment overview. Because the answer was just exposed, this activity is fixed as assisted practice and cannot create Known or Retained evidence. Its result returns to the same learning session. **Check now** is reserved for a later independent review.
+After learning, **Practice expression** opens one assisted recall response immediately. It does not pass through the topic assessment overview or add a second near-duplicate use response. Because the answer was just exposed, this activity cannot create Known or Retained evidence. Its result returns to the same learning session. **Check now** is reserved for a later independent response to a fresh contextual prompt; meaning/form and use are graded separately from that response.
 
 When a previously learned expression becomes due, the unrevealed card may lead with **Check now** for an independent result while retaining **Review expression** as a secondary action. The header-level **Check what I already know** action retains the whole-topic overview and queue.
 

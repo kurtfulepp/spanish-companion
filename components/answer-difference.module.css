@@ -1,0 +1,41 @@
+.comparison {
+  margin-top: 12px;
+  border-radius: 14px;
+  padding: 14px;
+  background: white;
+}
+.comparison > strong {
+  display: block;
+  color: var(--brand-ink-strong);
+}
+.comparison p {
+  display: grid;
+  grid-template-columns: 82px 1fr;
+  gap: 10px;
+  align-items: baseline;
+  margin: 8px 0 0;
+}
+.comparison p > span {
+  color: var(--brand-ink-muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+.comparison code {
+  color: var(--brand-ink);
+  font-family: inherit;
+  font-size: 17px;
+}
+.comparison mark {
+  border-radius: 4px;
+  padding: 1px 2px;
+  background: color-mix(in srgb, var(--brand-flag-red) 17%, white);
+  color: var(--brand-flag-red);
+  font-weight: 750;
+}
+
+@media (max-width: 480px) {
+  .comparison p {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}

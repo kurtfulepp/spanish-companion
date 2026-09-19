@@ -9,6 +9,7 @@ import {
   ChevronDown,
   LoaderCircle,
   LockKeyhole,
+  WandSparkles,
 } from 'lucide-react';
 import { SpeechButton } from '@/components/speech-button';
 import { TimedSpeechExpression } from '@/components/timed-speech-expression';
@@ -21,7 +22,7 @@ import {
   type VocabularyLearningSet,
 } from '@/lib/vocabulary-learning-path';
 
-export type DiningOutPathItem = {
+export type VocabularyTopicPathItem = {
   id: string;
   sectionId: string;
   sectionTitle: string;
@@ -49,18 +50,32 @@ const statusCopy = {
   retained: 'Retained',
 } as const;
 
-export function DiningOutLearningPath({
+export function VocabularyTopicLearningPath({
+  themeId,
+  themeTitle,
+  level,
   items,
   sets,
   voice,
   onAssessAll,
   onAssess,
+  onExpand,
+  expanding = false,
+  generatedCount = 0,
+  message = '',
 }: {
-  items: DiningOutPathItem[];
+  themeId: string;
+  themeTitle: string;
+  level: CEFRLevel;
+  items: VocabularyTopicPathItem[];
   sets: VocabularyLearningSet[];
   voice: VoicePreference;
   onAssessAll: () => void;
-  onAssess: (itemId: string, recentlyStudied: boolean) => void;
+  onAssess: (itemId: string, recentlyStudied: boolean, prompt?: string) => void;
+  onExpand?: () => void;
+  expanding?: boolean;
+  generatedCount?: number;
+  message?: string;
 }) {
   const [catalog, setCatalog] = useState<AssessmentCatalog | null>(null);
   const [loading, setLoading] = useState(true);
@@ -68,10 +83,11 @@ export function DiningOutLearningPath({
   const [revealed, setRevealed] = useState<Set<string>>(() => new Set());
   const [browsing, setBrowsing] = useState(false);
   const [now, setNow] = useState(0);
+  const hasStructuredSets = sets.length > 0;
 
   useEffect(() => {
     const controller = new AbortController();
-    fetch('/api/vocabulary/assessment?themeId=dining-out', {
+    fetch(`/api/vocabulary/assessment?themeId=${encodeURIComponent(themeId)}`, {
       cache: 'no-store',
       signal: controller.signal,
     })
@@ -96,7 +112,7 @@ export function DiningOutLearningPath({
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, []);
+  }, [themeId]);
 
   const path = useMemo(
     () => buildLearningPath(items, sets, catalog, now),
@@ -142,36 +158,61 @@ export function DiningOutLearningPath({
       <div className="overflow-hidden rounded-[28px] bg-[var(--brand-surface)] shadow-[0_18px_55px_rgba(48,51,38,.1)] ring-1 ring-[var(--brand-border)]">
         <div className="border-b border-[var(--brand-border)] bg-[linear-gradient(115deg,#fff0e8,#fff4dc)] px-5 py-7 sm:px-8 sm:py-9">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="eyebrow">B2 learning path</p>
+            <p className="eyebrow">{level} learning path</p>
             <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => setBrowsing((current) => !current)}
-                aria-expanded={browsing}
-                className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[var(--brand-border)] bg-white/70 px-4 text-sm font-semibold text-[var(--brand-ink)] hover:bg-white"
-              >
-                <BookOpen className="size-4" />
-                {browsing ? 'Return to session' : 'Browse all expressions'}
-              </button>
-              <button
-                type="button"
-                onClick={onAssessAll}
-                className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[var(--brand-border)] bg-white/70 px-4 text-sm font-semibold text-[var(--brand-ink)] hover:bg-white"
-              >
-                <Check className="size-4" />
-                Check what I already know
-              </button>
+              {total > 0 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setBrowsing((current) => !current)}
+                    aria-expanded={browsing}
+                    className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[var(--brand-border)] bg-white/70 px-4 text-sm font-semibold text-[var(--brand-ink)] hover:bg-white"
+                  >
+                    <BookOpen className="size-4" />
+                    {browsing ? 'Return to session' : 'Browse all expressions'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onAssessAll}
+                    className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[var(--brand-border)] bg-white/70 px-4 text-sm font-semibold text-[var(--brand-ink)] hover:bg-white"
+                  >
+                    <Check className="size-4" />
+                    Check what I already know
+                  </button>
+                </>
+              )}
+              {!hasStructuredSets && onExpand && (
+                <button
+                  type="button"
+                  onClick={onExpand}
+                  disabled={expanding || generatedCount >= 72}
+                  className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[var(--brand-border)] bg-white/70 px-4 text-sm font-semibold text-[var(--brand-ink)] hover:bg-white disabled:cursor-not-allowed disabled:opacity-55"
+                >
+                  {expanding ? (
+                    <LoaderCircle className="size-4 animate-spin" />
+                  ) : (
+                    <WandSparkles className="size-4" />
+                  )}
+                  {expanding
+                    ? 'Creating expressions…'
+                    : generatedCount >= 72
+                      ? 'Expansion limit reached'
+                      : total > 0
+                        ? 'Add 12 expressions'
+                        : `Create ${level} expressions`}
+                </button>
+              )}
             </div>
           </div>
           <div className="mt-6 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <h1 className="text-4xl font-semibold tracking-[-.055em] text-[var(--brand-ink)] sm:text-5xl">
-                Dining Out
+                {themeTitle}
               </h1>
               <p className="mt-3 max-w-2xl text-base leading-relaxed text-[var(--brand-ink-muted)]">
-                {total} expressions across six moments. Work in focused
-                six-expression sessions, with earlier gaps brought back for
-                review.
+                {total > 0
+                  ? `${total} expressions across six moments. Work in focused six-expression sessions, with earlier gaps brought back for review.`
+                  : `Create a personal set of ${level} expressions across this topic's six moments.`}
               </p>
             </div>
             <div className="grid min-w-[280px] grid-cols-3 gap-2 text-center">
@@ -180,57 +221,68 @@ export function DiningOutLearningPath({
               <Metric value={path.retainedCount} label="Retained" />
             </div>
           </div>
-          <div className="mt-6 h-2 overflow-hidden rounded-full bg-white/75">
-            <div
-              className="h-full rounded-full bg-[var(--brand-flag-red)] transition-[width] duration-300"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          <p className="mt-2 text-xs font-medium text-[var(--brand-ink-muted)]">
-            {checkedCount}/{total} checked · retention is confirmed by a later
-            independent review
-          </p>
+          {total > 0 && (
+            <>
+              <div className="mt-6 h-2 overflow-hidden rounded-full bg-white/75">
+                <div
+                  className="h-full rounded-full bg-[var(--brand-flag-red)] transition-[width] duration-300"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <p className="mt-2 text-xs font-medium text-[var(--brand-ink-muted)]">
+                {checkedCount}/{total} checked · retention is confirmed by a
+                later independent review
+              </p>
+            </>
+          )}
         </div>
 
         <div className="px-5 py-6 sm:px-8 sm:py-8">
-          <div className="flex gap-2 overflow-x-auto pb-2 sm:grid sm:grid-cols-5 sm:overflow-visible sm:pb-0">
-            {path.setProgress.map((set) => {
-              const introduced = set.checkedCount === set.item_count;
-              const current = set.id === path.activeSet?.id;
-              return (
-                <div
-                  key={set.id}
-                  className={`w-48 shrink-0 rounded-[16px] border px-3 py-3 sm:w-auto ${
-                    current
-                      ? 'border-[var(--brand-flag-gold)] bg-[var(--brand-cream)]'
-                      : introduced
-                        ? 'border-[#b8d9cc] bg-[#f0f8f4]'
-                        : 'border-[var(--brand-border)] bg-white'
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-bold uppercase tracking-[.08em] text-[var(--brand-ink-muted)]">
-                      Set {set.set_number}
-                    </span>
-                    {introduced ? (
-                      <CheckCircle2 className="size-4 text-[#357a62]" />
-                    ) : current ? (
-                      <span className="size-2 rounded-full bg-[var(--brand-flag-red)]" />
-                    ) : (
-                      <LockKeyhole className="size-3.5 text-[#a69b8d]" />
-                    )}
+          {message && (
+            <output className="mb-6 block rounded-[14px] bg-[var(--brand-cream)] p-3 text-sm font-medium text-[var(--brand-ink-muted)]">
+              {message}
+            </output>
+          )}
+          {path.setProgress.length > 0 && (
+            <div className="flex gap-2 overflow-x-auto pb-2 sm:grid sm:grid-cols-5 sm:overflow-visible sm:pb-0">
+              {path.setProgress.map((set) => {
+                const introduced = set.checkedCount === set.item_count;
+                const current = set.id === path.activeSet?.id;
+                return (
+                  <div
+                    key={set.id}
+                    className={`w-48 shrink-0 rounded-[16px] border px-3 py-3 sm:w-auto ${
+                      current
+                        ? 'border-[var(--brand-flag-gold)] bg-[var(--brand-cream)]'
+                        : introduced
+                          ? 'border-[#b8d9cc] bg-[#f0f8f4]'
+                          : 'border-[var(--brand-border)] bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-bold uppercase tracking-[.08em] text-[var(--brand-ink-muted)]">
+                        Set {set.set_number}
+                      </span>
+                      {introduced ? (
+                        <CheckCircle2 className="size-4 text-[#357a62]" />
+                      ) : current ? (
+                        <span className="size-2 rounded-full bg-[var(--brand-flag-red)]" />
+                      ) : (
+                        <LockKeyhole className="size-3.5 text-[#a69b8d]" />
+                      )}
+                    </div>
+                    <p className="mt-1 truncate text-sm font-semibold text-[var(--brand-ink)]">
+                      {set.title}
+                    </p>
+                    <p className="mt-1 text-xs text-[var(--brand-ink-muted)]">
+                      {set.checkedCount}/{set.item_count} checked ·{' '}
+                      {set.knownCount} known
+                    </p>
                   </div>
-                  <p className="mt-1 truncate text-sm font-semibold text-[var(--brand-ink)]">
-                    {set.title}
-                  </p>
-                  <p className="mt-1 text-xs text-[var(--brand-ink-muted)]">
-                    {set.checkedCount}/{set.item_count} checked ·{' '}
-                    {set.knownCount} known
-                  </p>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
 
           {loading && (
             <div className="mt-8 flex items-center gap-2 rounded-[16px] bg-[var(--brand-cream)] p-4 text-sm text-[var(--brand-ink-muted)]">
@@ -250,11 +302,40 @@ export function DiningOutLearningPath({
 
           {!loading &&
             !browsing &&
-            (path.allRetained ? (
+            (total === 0 ? (
+              <div className="mt-4 rounded-[22px] bg-[var(--brand-cream)] p-6">
+                <h2 className="text-xl font-semibold text-[var(--brand-ink)]">
+                  No expressions yet
+                </h2>
+                <p className="mt-2 max-w-xl text-sm text-[var(--brand-ink-muted)]">
+                  Create an exact-level collection before starting this learning
+                  flow. Generated expressions remain personal to your account.
+                </p>
+                {onExpand && (
+                  <button
+                    type="button"
+                    onClick={onExpand}
+                    disabled={expanding}
+                    className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-full bg-[var(--brand-flag-gold)] px-4 text-sm font-bold text-[var(--brand-ink)] hover:brightness-[.98] disabled:cursor-not-allowed disabled:opacity-55"
+                  >
+                    {expanding ? (
+                      <LoaderCircle className="size-4 animate-spin" />
+                    ) : (
+                      <WandSparkles className="size-4" />
+                    )}
+                    {expanding
+                      ? 'Creating expressions…'
+                      : `Create ${level} expressions`}
+                  </button>
+                )}
+              </div>
+            ) : path.allRetained ? (
               <div className="mt-9 rounded-[24px] border border-[#b8d9cc] bg-[#f0f8f4] p-7 text-center">
                 <CheckCircle2 className="mx-auto size-8 text-[#357a62]" />
                 <h2 className="mt-3 text-2xl font-semibold tracking-[-.035em] text-[var(--brand-ink)]">
-                  All expressions retained
+                  {hasStructuredSets
+                    ? 'All expressions retained'
+                    : 'All available expressions retained'}
                 </h2>
                 <p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-[var(--brand-ink-muted)]">
                   You recalled and used all {total} expressions after a delay. A
@@ -269,12 +350,17 @@ export function DiningOutLearningPath({
                       Current session · {session.items.length} expressions
                     </p>
                     <h2 className="mt-1 text-3xl font-semibold tracking-[-.045em] text-[var(--brand-ink)]">
-                      {path.activeSet?.title ?? 'Review queue'}
+                      {path.activeSet?.title ??
+                        (session.newRemaining > 0
+                          ? 'Current expressions'
+                          : 'Review queue')}
                     </h2>
                     <p className="mt-1 text-sm text-[var(--brand-ink-muted)]">
                       {path.activeSet
                         ? `${path.activeSet.description} Earlier gaps are mixed in without taking over the session.`
-                        : 'All expressions have been introduced. This session focuses on due reviews and identified gaps.'}
+                        : session.newRemaining > 0
+                          ? 'Learn the available expressions. Earlier gaps are mixed in without taking over the session.'
+                          : 'All available expressions have been introduced. This session focuses on due reviews and identified gaps.'}
                     </p>
                   </div>
                   <div className="text-sm font-semibold text-[var(--brand-ink-muted)] sm:text-right">
@@ -358,7 +444,7 @@ function ExpressionBrowser({
     description: string;
     sort: number;
     items: Array<
-      DiningOutPathItem & {
+      VocabularyTopicPathItem & {
         state: keyof typeof statusCopy;
       }
     >;
@@ -440,13 +526,13 @@ function PromptCard({
   onReveal,
   onAssess,
 }: {
-  item: DiningOutPathItem & {
+  item: VocabularyTopicPathItem & {
     state: keyof typeof statusCopy;
   };
   voice: VoicePreference;
   revealed: boolean;
   onReveal: () => void;
-  onAssess: (itemId: string, recentlyStudied: boolean) => void;
+  onAssess: (itemId: string, recentlyStudied: boolean, prompt?: string) => void;
 }) {
   const [variation, setVariation] = useState('');
   const [variationOpen, setVariationOpen] = useState(false);
@@ -494,7 +580,7 @@ function PromptCard({
           {needsLearning
             ? item.state === 'learning'
               ? 'Review the expression, then practice it again.'
-              : 'Learn the expression, then practice it in two steps.'
+              : 'Learn the expression, then practice recalling it.'
             : 'Complete an independent check, or review the expression first.'}
         </p>
       )}
@@ -504,7 +590,7 @@ function PromptCard({
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={() => onAssess(item.id, true)}
+              onClick={() => onAssess(item.id, true, item.english)}
               className="inline-flex min-h-10 items-center gap-2 rounded-full bg-[var(--brand-flag-gold)] px-4 text-sm font-bold text-[var(--brand-ink)] hover:brightness-[.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-ink-strong)]"
             >
               <Check className="size-4" />
@@ -533,7 +619,7 @@ function PromptCard({
               className="mt-4 rounded-[14px] border border-[var(--brand-border)] bg-[var(--brand-surface)] p-3"
             >
               <p className="text-sm text-[var(--brand-ink)]">
-                {variationPrompt(item.sectionSort)}
+                {variationPrompt(item.sectionTitle, item.sectionDescription)}
               </p>
               <label htmlFor={`variation-${item.id}`} className="sr-only">
                 Write a variation in Spanish
@@ -606,18 +692,8 @@ function PromptCard({
   );
 }
 
-function variationPrompt(moment: number) {
-  const prompts: Record<number, string> = {
-    1: 'Change the party size, time, or seating preference.',
-    2: 'Change the dish, ingredient, flavor, or portion.',
-    3: 'Change the dish, quantity, or order of service.',
-    4: 'Change the restriction, substitution, or preparation request.',
-    5: 'Change the problem and the solution you want.',
-    6: 'Change the payment method, split, or charge.',
-  };
-  return (
-    prompts[moment] ?? 'Change one detail while keeping the expression useful.'
-  );
+function variationPrompt(title: string, description: string) {
+  return `Change one detail for ${title.toLowerCase()}. Keep the same purpose: ${description}`;
 }
 
 function ArchiveDrawer({
@@ -627,7 +703,7 @@ function ArchiveDrawer({
 }: {
   title: string;
   description: string;
-  items: Array<DiningOutPathItem>;
+  items: Array<VocabularyTopicPathItem>;
 }) {
   return (
     <details className="group mt-6 rounded-[20px] border border-[var(--brand-border)] bg-[#f8f4ed]">

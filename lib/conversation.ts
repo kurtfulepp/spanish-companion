@@ -1,4 +1,5 @@
 import type { CEFRLevel } from './cefr';
+import type { LearningFeedbackVerdict } from './feedback-language';
 
 export const MAX_CONVERSATION_TURNS = 6;
 export const MAX_CONVERSATION_MESSAGE = 600;
@@ -38,7 +39,12 @@ export type ConversationReply = {
 };
 export type ConversationReview = {
   summary: string;
-  corrections: { original: string; suggestion: string; explanation: string }[];
+  corrections: {
+    original: string;
+    suggestion: string;
+    explanation: string;
+    verdict: Extract<LearningFeedbackVerdict, 'correct_with_fix' | 'incorrect'>;
+  }[];
   nextPractice: string;
 };
 

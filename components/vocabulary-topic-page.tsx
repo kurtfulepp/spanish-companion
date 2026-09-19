@@ -2,16 +2,7 @@
 /* oxlint-disable next/no-html-link-for-pages, next/no-img-element */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  ArrowLeft,
-  ArrowRight,
-  Eye,
-  LoaderCircle,
-  Sparkles,
-  WandSparkles,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { SpeechButton } from '@/components/speech-button';
+import { ArrowLeft } from 'lucide-react';
 import { VocabularyHeader } from '@/components/vocabulary-header';
 import type { LearnerProfile } from '@/components/profile-dialog';
 import { useLearnerProfile } from '@/components/learner-profile-provider';
@@ -19,9 +10,9 @@ import { LevelRequired } from '@/components/level-required';
 import { createClient } from '@/lib/supabase/client';
 import { VocabularyAssessment } from '@/components/vocabulary-assessment';
 import {
-  DiningOutLearningPath,
-  type DiningOutPathItem,
-} from '@/components/dining-out-learning-path';
+  VocabularyTopicLearningPath,
+  type VocabularyTopicPathItem,
+} from '@/components/vocabulary-topic-learning-path';
 import { topicPresentation } from '@/lib/vocabulary-topics';
 import type { CEFRLevel } from '@/lib/cefr';
 import type { VocabularyLearningSet } from '@/lib/vocabulary-learning-path';
@@ -51,7 +42,7 @@ type VocabularySection = {
   vocabulary_items: Omit<VocabularyItem, 'sectionId'>[];
 };
 type Theme = { id: string; title: string; description: string };
-type Mode = 'overview' | 'diagnostic' | 'explore';
+type Mode = 'diagnostic' | 'explore';
 
 export function VocabularyTopicPage({ themeId }: { themeId: string }) {
   const presentation = topicPresentation(themeId);
@@ -64,14 +55,12 @@ export function VocabularyTopicPage({ themeId }: { themeId: string }) {
   const [theme, setTheme] = useState<Theme | null>(null);
   const [sections, setSections] = useState<VocabularySection[]>([]);
   const [learningSets, setLearningSets] = useState<VocabularyLearningSet[]>([]);
-  const [mode, setMode] = useState<Mode>('overview');
-  const [selectedSection, setSelectedSection] = useState('all');
+  const [mode, setMode] = useState<Mode>('explore');
   const [assessmentTarget, setAssessmentTarget] = useState<
     string | undefined
   >();
+  const [assessmentPrompt, setAssessmentPrompt] = useState<string>();
   const [recentlyStudied, setRecentlyStudied] = useState(false);
-  const [assessmentReturnMode, setAssessmentReturnMode] =
-    useState<Mode>('overview');
   const [loading, setLoading] = useState(true);
   const [expanding, setExpanding] = useState(false);
   const [message, setMessage] = useState('');
@@ -116,8 +105,6 @@ export function VocabularyTopicPage({ themeId }: { themeId: string }) {
       };
     };
     const loadLearningSets = async () => {
-      if (themeId !== 'dining-out' || profile.proficiencyLevel !== 'B2')
-        return [];
       const { data } = await supabase
         .from('vocabulary_learning_sets')
         .select(
@@ -167,14 +154,8 @@ export function VocabularyTopicPage({ themeId }: { themeId: string }) {
     if (profileLoading || !profile.proficiencyLevel || !userId) return;
     void (async () => {
       await loadTopic();
-      const nextMode =
-        themeId === 'dining-out' && profile.proficiencyLevel === 'B2'
-          ? 'explore'
-          : 'overview';
-      setMode(nextMode);
-      setSelectedSection('all');
+      setMode('explore');
       setAssessmentTarget(undefined);
-      setAssessmentReturnMode(nextMode);
     })();
   }, [loadTopic, profile.proficiencyLevel, profileLoading, themeId, userId]);
 
@@ -188,45 +169,54 @@ export function VocabularyTopicPage({ themeId }: { themeId: string }) {
       ),
     [sections],
   );
-  const visibleSections =
-    selectedSection === 'all'
-      ? sections
-      : sections.filter((section) => section.slug === selectedSection);
   const generatedCount = allItems.filter((item) => item.source === 'ai').length;
-  const learningPathItems = useMemo(
+  const topicPathItems = useMemo(
     () =>
       sections.flatMap((section) =>
-        section.vocabulary_items
-          .filter((item) => item.learning_set_id)
-          .map((item) => ({
-            ...item,
-            sectionId: section.id,
-            sectionTitle: section.title,
-            sectionDescription: section.description,
-            sectionSort: section.sort_order,
-          })),
-      ) as DiningOutPathItem[],
+        section.vocabulary_items.map((item) => ({
+          ...item,
+          sectionId: section.id,
+          sectionTitle: section.title,
+          sectionDescription: section.description,
+          sectionSort: section.sort_order,
+        })),
+      ) as VocabularyTopicPathItem[],
     [sections],
   );
-  const hasDiningOutPath =
-    themeId === 'dining-out' &&
-    profile.proficiencyLevel === 'B2' &&
-    learningSets.length === 5 &&
-    learningPathItems.length === 120;
-  const expressionCount = hasDiningOutPath
-    ? learningPathItems.length
-    : allItems.length;
+  const structuredSetIds = useMemo(
+    () => new Set(learningSets.map((set) => set.id)),
+    [learningSets],
+  );
+  const structuredItems = useMemo(
+    () =>
+      topicPathItems.filter(
+        (item) =>
+          item.learning_set_id && structuredSetIds.has(item.learning_set_id),
+      ),
+    [structuredSetIds, topicPathItems],
+  );
+  const expectedStructuredItems = learningSets.reduce(
+    (total, set) => total + set.item_count,
+    0,
+  );
+  const hasStructuredPath =
+    learningSets.length > 0 &&
+    structuredItems.length === expectedStructuredItems;
+  const learningPathItems = hasStructuredPath
+    ? structuredItems
+    : topicPathItems;
+  const activeLearningSets = hasStructuredPath ? learningSets : [];
   function startDiagnostic() {
     setAssessmentTarget(undefined);
+    setAssessmentPrompt(undefined);
     setRecentlyStudied(false);
-    setAssessmentReturnMode(hasDiningOutPath ? 'explore' : 'overview');
     setMode('diagnostic');
   }
 
-  function assessExpression(itemId: string, studied: boolean) {
+  function assessExpression(itemId: string, studied: boolean, prompt?: string) {
     setAssessmentTarget(itemId);
+    setAssessmentPrompt(studied ? prompt : undefined);
     setRecentlyStudied(studied);
-    setAssessmentReturnMode('explore');
     setMode('diagnostic');
   }
 
@@ -313,247 +303,32 @@ export function VocabularyTopicPage({ themeId }: { themeId: string }) {
         </a>
       </div>
 
-      {mode === 'overview' && (
-        <section
-          className={`mx-auto mt-3 max-w-[1360px] overflow-hidden rounded-[32px] ${presentation.cardTone} shadow-[0_18px_55px_rgba(48,51,38,.1)]`}
-        >
-          <div className="grid min-h-[520px] gap-8 px-6 py-9 sm:px-10 sm:py-12 lg:grid-cols-[1fr_.8fr] lg:items-center lg:px-14">
-            <div>
-              <span className="inline-flex items-center gap-2 rounded-full bg-white/75 px-3 py-1.5 text-sm font-semibold text-[#80621f]">
-                <Sparkles className="size-4" />
-                {profile.proficiencyLevel} topic experience
-              </span>
-              <h1 className="mt-6 max-w-3xl font-heading text-[clamp(3.5rem,7vw,7rem)] font-semibold leading-[.88] tracking-[-.075em] text-[#7f302b]">
-                {theme.title}
-              </h1>
-              <p className="mt-7 max-w-xl text-lg leading-relaxed text-[#79564c]">
-                {theme.description}
-              </p>
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                {allItems.length ? (
-                  <Button
-                    onClick={startDiagnostic}
-                    className="h-12 rounded-full px-6 text-base font-bold"
-                  >
-                    <Eye className="size-4" />
-                    Assess vocabulary
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={() => void expandTopic()}
-                    disabled={expanding}
-                    className="h-12 rounded-full px-6 text-base font-bold"
-                  >
-                    {expanding ? (
-                      <LoaderCircle className="size-4 animate-spin" />
-                    ) : (
-                      <WandSparkles className="size-4" />
-                    )}
-                    {expanding
-                      ? 'Creating expressions…'
-                      : `Create ${profile.proficiencyLevel} expressions`}
-                  </Button>
-                )}
-                <Button
-                  variant="outline"
-                  onClick={() => setMode('explore')}
-                  className="h-12 rounded-full border-[#cfb96f] bg-white/65 px-6 text-base font-bold"
-                >
-                  Explore {expressionCount} expressions
-                  <ArrowRight className="size-4" />
-                </Button>
-              </div>
-              <div className="mt-8 flex flex-wrap gap-2 text-sm font-medium text-[#806f42]">
-                <span className="rounded-full bg-white/65 px-3 py-1.5">
-                  {sections.length} real moments
-                </span>
-                <span className="rounded-full bg-white/65 px-3 py-1.5">
-                  Audio included
-                </span>
-                <span className="rounded-full bg-white/65 px-3 py-1.5">
-                  Progress saved
-                </span>
-              </div>
-            </div>
-            <div className="relative mx-auto grid size-72 place-items-center rounded-full bg-white shadow-[0_28px_70px_rgba(118,85,20,.14)] sm:size-96">
-              <img
-                src={presentation.image.src}
-                alt=""
-                className="size-[88%] object-contain drop-shadow-[0_18px_20px_rgba(118,85,20,.13)]"
-              />
-            </div>
-          </div>
-        </section>
-      )}
-
       {mode === 'diagnostic' && (
         <VocabularyAssessment
           scope={{ themeId }}
           targetId={assessmentTarget}
+          initialPrompt={assessmentPrompt}
           recentlyStudied={recentlyStudied}
-          onExit={() => setMode(assessmentReturnMode)}
+          onExit={() => setMode('explore')}
         />
       )}
 
-      {mode === 'explore' && hasDiningOutPath && (
-        <DiningOutLearningPath
+      {mode === 'explore' && (
+        <VocabularyTopicLearningPath
+          key={`${themeId}-${profile.proficiencyLevel}`}
+          themeId={themeId}
+          themeTitle={theme.title}
+          level={profile.proficiencyLevel}
           items={learningPathItems}
-          sets={learningSets}
+          sets={activeLearningSets}
           voice={profile.voicePreference}
           onAssessAll={startDiagnostic}
           onAssess={assessExpression}
+          onExpand={() => void expandTopic()}
+          expanding={expanding}
+          generatedCount={generatedCount}
+          message={message}
         />
-      )}
-
-      {mode === 'explore' && !hasDiningOutPath && (
-        <section className="mx-auto mt-3 max-w-[1360px]">
-          <div className="rounded-[28px] bg-[#7f302b] px-6 py-8 text-white sm:px-9">
-            <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-              <div>
-                <button
-                  onClick={() => setMode('overview')}
-                  className="inline-flex items-center gap-1 text-sm font-medium text-white/70 hover:text-white"
-                >
-                  <ArrowLeft className="size-4" />
-                  Topic overview
-                </button>
-                <h1 className="mt-4 text-4xl font-semibold tracking-[-.055em]">
-                  {theme.title} expressions
-                </h1>
-                <p className="mt-2 max-w-2xl text-base text-white/75">
-                  {profile.proficiencyLevel} expressions across six moments.
-                  Your progress stays attached to each expression.
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <span className="rounded-full bg-white/10 px-3 py-2 text-sm">
-                  {allItems.length} expressions
-                </span>
-                <span className="rounded-full bg-white/10 px-3 py-2 text-sm">
-                  Assessed knowledge
-                </span>
-                {generatedCount > 0 && (
-                  <span className="rounded-full bg-white/10 px-3 py-2 text-sm">
-                    {generatedCount} expanded
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className="mt-7 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex gap-2 overflow-x-auto pb-1">
-                <button
-                  onClick={() => setSelectedSection('all')}
-                  className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold ${selectedSection === 'all' ? 'bg-[#f4bd4e] text-[#7f302b]' : 'bg-white/10 text-white/80'}`}
-                >
-                  All moments
-                </button>
-                {sections.map((section) => (
-                  <button
-                    key={section.id}
-                    onClick={() => setSelectedSection(section.slug)}
-                    className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold ${selectedSection === section.slug ? 'bg-[#f4bd4e] text-[#7f302b]' : 'bg-white/10 text-white/80'}`}
-                  >
-                    {section.title}
-                  </button>
-                ))}
-              </div>
-              <Button
-                onClick={() => void expandTopic()}
-                disabled={expanding || generatedCount >= 72}
-                className="h-11 shrink-0 rounded-full bg-white px-5 font-bold text-[#7f302b] hover:bg-[#fff4dc]"
-              >
-                <span aria-hidden="true">
-                  {expanding ? (
-                    <LoaderCircle className="size-4 animate-spin" />
-                  ) : (
-                    <WandSparkles className="size-4" />
-                  )}
-                </span>
-                {expanding
-                  ? 'Creating expressions…'
-                  : generatedCount >= 72
-                    ? 'Current expansion limit reached'
-                    : 'Add 12 expressions'}
-              </Button>
-            </div>
-          </div>
-          {message && (
-            <output className="mt-5 block rounded-[14px] bg-[#fff4dc] p-3 text-sm font-medium text-[#80621f]">
-              {message}
-            </output>
-          )}
-          <div className="mt-6 space-y-7">
-            {visibleSections.map((section) => (
-              <div key={section.id}>
-                <div className="mb-4 px-1">
-                  <p className="eyebrow">Moment {section.sort_order}</p>
-                  <h2 className="mt-1 text-2xl font-semibold tracking-[-.035em]">
-                    {section.title}
-                  </h2>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {section.description}
-                  </p>
-                </div>
-                <div className="grid gap-4 lg:grid-cols-2">
-                  {section.vocabulary_items.map((item) => {
-                    return (
-                      <article
-                        key={item.id}
-                        className="rounded-[24px] bg-white p-5 shadow-[0_9px_28px_rgba(37,55,49,.065)] ring-1 ring-black/5 sm:p-6"
-                      >
-                        <div className="flex items-start justify-between gap-4">
-                          <div>
-                            {item.source === 'ai' && (
-                              <span className="mb-2 inline-flex items-center gap-1 rounded-full bg-[#fff4dc] px-2.5 py-1 text-[11px] font-bold uppercase tracking-[.06em] text-[#80621f]">
-                                <WandSparkles className="size-3" />
-                                Expanded
-                              </span>
-                            )}
-                            <h3 className="text-xl font-semibold leading-snug tracking-[-.025em] text-[#173c34]">
-                              {item.spanish}
-                            </h3>
-                            <p className="mt-1 text-[15px] text-muted-foreground">
-                              {item.english}
-                            </p>
-                          </div>
-                          <SpeechButton
-                            text={item.spanish}
-                            voice={profile.voicePreference}
-                            className="shrink-0"
-                          />
-                        </div>
-                        <div className="mt-5 rounded-[16px] bg-[#f7f9f8] p-4">
-                          <p className="text-[15px] font-medium leading-relaxed">
-                            {item.example_es}
-                          </p>
-                          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                            {item.example_en}
-                          </p>
-                        </div>
-                        {item.usage_note && (
-                          <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-                            {item.usage_note}
-                          </p>
-                        )}
-                        <div className="mt-5 flex items-center gap-2 border-t border-border/70 pt-4">
-                          <button
-                            className="rounded-full bg-[var(--brand-gold)] px-4 py-2 text-sm font-semibold text-[var(--brand-ink)]"
-                            onClick={() => assessExpression(item.id, true)}
-                          >
-                            Check this expression
-                          </button>
-                          <span className="text-xs text-muted-foreground">
-                            Browsing does not mark it known.
-                          </span>
-                        </div>
-                      </article>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
       )}
     </main>
   );
