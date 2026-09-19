@@ -1,3 +1,4 @@
+import { isCrossOriginRequest } from '@/lib/server/request-body';
 import { createClient } from '@/lib/supabase/server';
 import { isCEFRLevel } from '@/lib/cefr';
 import { GRAMMAR_RULES } from '@/lib/grammar-rules';
@@ -75,6 +76,15 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    if (isCrossOriginRequest(request))
+      return reply({ error: 'Open Grammar in the app.' }, 403);
+    const supabase = await createClient();
+    const { data: auth, error: authError } = await supabase.auth.getUser();
+    if (authError || !auth.user)
+      return reply(
+        { error: 'Sign in before saving your grammar practice.' },
+        401,
+      );
     // Bound streamed input as well as Content-Length; neither is trusted alone.
     const reader = request.body?.getReader();
     if (!reader) return reply({ error: 'No practice was submitted.' }, 400);
@@ -102,13 +112,6 @@ export async function POST(request: Request) {
     } catch {
       return reply({ error: 'Invalid practice submission.' }, 400);
     }
-    const supabase = await createClient();
-    const { data: auth, error: authError } = await supabase.auth.getUser();
-    if (authError || !auth.user)
-      return reply(
-        { error: 'Sign in before saving your grammar practice.' },
-        401,
-      );
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('proficiency_level')

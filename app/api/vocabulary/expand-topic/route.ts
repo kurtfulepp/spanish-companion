@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
-import { expandTopicRequest } from '@/lib/server/topic-expansion';
+import { expandTopicRequest, TOPIC_PROMPT_VERSION } from '@/lib/server/topic-expansion';
 
 export async function POST(request: Request) {
   let supabase: Awaited<ReturnType<typeof createClient>>;
@@ -69,7 +69,7 @@ export async function POST(request: Request) {
         p_theme_id: themeId,
         p_items: items,
         p_model: model,
-        p_prompt_version: 'topic-expansion-v1',
+        p_prompt_version: TOPIC_PROMPT_VERSION,
       });
       if (error || typeof data !== 'number')
         throw new Error('Save unavailable');

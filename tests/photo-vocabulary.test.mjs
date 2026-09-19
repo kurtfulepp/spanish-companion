@@ -43,6 +43,7 @@ test('sign-in, configuration, and cross-site checks block analysis before readin
     [dependencies({ getLearnerLevel: async () => null, consumeQuota: mustNotCall, fetcher: mustNotCall }), {}, 409],
     [dependencies({ apiKey: '', consumeQuota: mustNotCall, fetcher: mustNotCall }), {}, 503],
     [dependencies({ authenticate: mustNotCall, consumeQuota: mustNotCall, fetcher: mustNotCall }), { 'sec-fetch-site': 'cross-site' }, 403],
+    [dependencies({ authenticate: mustNotCall, consumeQuota: mustNotCall, fetcher: mustNotCall }), { origin: 'https://attacker.example', 'sec-fetch-site': 'same-site' }, 403],
   ]) {
     const response = await analyzePhotoRequest(request(photo, headers), deps);
     assert.equal(response.status, expected);

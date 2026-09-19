@@ -69,3 +69,14 @@ test('admin routes deny access when Auth is unavailable or rejects the user', as
     assert.equal((await updateSession(request('/admin'))).status, 404);
   }
 });
+
+test('only authenticated Conversation permits the microphone; photo capture stays scoped', async () => {
+  setup(learner);
+  for (const path of ['/conversation', '/home', '/vocabulary/from-photo']) {
+    const policy = (await updateSession(request(path))).headers.get('Permissions-Policy');
+    assert.ok(policy.includes(`microphone=${path === '/conversation' ? '(self)' : '()'}`));
+    assert.ok(policy.includes(`camera=${path === '/vocabulary/from-photo' ? '(self)' : '()'}`));
+  }
+  setup(null);
+  assert.ok((await updateSession(request('/conversation'))).headers.get('Permissions-Policy').includes('microphone=()'));
+});

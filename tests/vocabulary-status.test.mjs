@@ -110,3 +110,11 @@ test('prioritizes gaps, due reviews, and practiced expressions before new work',
     ['gap', 'due', 'practiced', 'new', 'known', 'retained'],
   );
 });
+
+test('disputed feedback cannot establish either a learning gap or knowledge', () => {
+  for (const status of ['known', 'needs_practice', 'not_assessed']) {
+    const item = assessmentItem('disputed', {status, verdict: 'incorrect', retained: true});
+    item.latest.disputed = true;
+    assert.equal(vocabularyLearningState(item), 'practiced');
+  }
+});

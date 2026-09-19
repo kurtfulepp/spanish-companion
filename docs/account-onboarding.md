@@ -12,7 +12,7 @@
 
 Do not write email or passwords into `profiles`, local storage, logs, or an application API. The password lives only in React state until submission and is cleared on the confirmation screen. Do not create a second profile in the unauthenticated browser: RLS only allows authenticated users to access their own row.
 
-Profile fields are not mandatory signup inputs. `display_name`, `proficiency_level`, and `level_source` are nullable. `voice_preference` defaults to `male`, `learning_timezone` to `America/New_York`, and `follow_device_timezone` to `false`. The database supplies IDs and timestamps. After authentication, a learner without `proficiency_level` must choose a level or take the placement check before learning content is shown. Saving a level updates the shared profile state and the current experience immediately.
+Profile fields are not mandatory signup inputs. `display_name`, `proficiency_level`, and `level_source` are nullable. `voice_preference` defaults to `male`, `learning_timezone` to `America/New_York`, and `follow_device_timezone` to `false`. The database supplies IDs and timestamps. After authentication, a learner without `proficiency_level` must choose a level before learning content is shown. The optional eight-question grammar check provides answers and explanations only; it does not recommend a CEFR level, write a placement attempt, or mark the profile as assessed. Level changes are recorded as learner-chosen. Saving a level updates the shared profile state and the current experience immediately.
 
 Sources: `20260903023000_create_profiles.sql`, `20260904173000_add_profile_voice_preference.sql`, `20260904203000_add_profile_timezone.sql`, and the existing profile editor.
 

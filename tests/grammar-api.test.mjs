@@ -194,3 +194,11 @@ test('API saves and reloads separate check and review evidence without merging s
     assert.equal((await POST(request(body))).status, 400);
   }
 });
+
+test('cross-origin grammar submissions fail before authentication or evidence writes', async () => {
+  setClient({auth: {getUser: () => { throw Error('Must not authenticate'); }}});
+  for (const headers of [{origin: 'https://attacker.example'}, {'sec-fetch-site': 'cross-site'}]) {
+    const response = await POST(new Request('https://kurtes.example/api/grammar', {method: 'POST', headers, body: JSON.stringify(payload())}));
+    assert.equal(response.status, 403);
+  }
+});

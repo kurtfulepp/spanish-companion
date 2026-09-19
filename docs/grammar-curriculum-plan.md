@@ -577,3 +577,7 @@ This index supplies the app’s grammar-type filters. A module may belong to sev
 Learner-facing vocabulary uses the evidence ladder **New → Practiced → Known → Retained**, with **Needs practice** and **Review due** as action states. Practiced records assisted work without treating it as independent evidence. The ladder is shared by topic and custom vocabulary and does not change grammar evidence labels.
 
 Known is scoped to the expression and assessment at the exact active profile level. It does not establish broad CEFR proficiency, mastery, listening, or pronunciation. Recheck with fresh content after a delay to gather retention evidence. Preserve prior attempts when results change. AI assessments must be identified as such and allow a challenge that removes the disputed result from knowledge and gap counts. The first implementation is provisional and has not received independent teacher calibration; it must not drive high-confidence mastery, placement, or automatic level advancement. See [Vocabulary assessment](vocabulary-assessment.md) for the implementation and validation limits.
+
+## QA note — 19 September 2026
+
+The optional eight-question grammar check no longer converts a raw score to A2–C1 or marks the profile as assessed. It gives answer-level explanations, keeps the current profile unchanged, and offers a separate self-selection action. This enforces the existing distinction between grammar practice and CEFR proficiency. See [the product QA report](qa-2026-09-19.md).

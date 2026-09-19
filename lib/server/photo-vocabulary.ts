@@ -1,3 +1,4 @@
+import { isCrossOriginRequest } from './request-body';
 import { CEFR_GUIDANCE, isCEFRLevel, type CEFRLevel } from '@/lib/cefr';
 
 // Server-only integration: never import this module from a client component.
@@ -162,7 +163,7 @@ function parseVocabulary(response: unknown): PhotoVocabulary {
 export async function analyzePhotoRequest(request: Request, deps: Dependencies): Promise<Response> {
   try {
     // Reject browser requests from another site before spending quota or reading images.
-    if (request.headers.get('sec-fetch-site') === 'cross-site') {
+    if (isCrossOriginRequest(request)) {
       throw new PhotoError(403, 'cross_site_request', 'Open photo vocabulary in the app.');
     }
     if (!(await deps.authenticate())) {

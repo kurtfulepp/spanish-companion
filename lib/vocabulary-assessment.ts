@@ -76,6 +76,8 @@ export function vocabularyLearningState(
   now = Date.now(),
 ): VocabularyLearningState {
   if (!item?.latest) return 'new';
+  // A disputed result is activity, not evidence of a gap or knowledge.
+  if (item.latest.disputed) return 'practiced';
   if (
     item.status === 'needs_practice' ||
     (item.latest.mode === 'practice' &&

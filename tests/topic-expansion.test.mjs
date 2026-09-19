@@ -159,7 +159,9 @@ test('uses a non-stored structured response and saves one balanced batch', async
           body.instructions,
           /exactly two distinct expressions for each moment/,
         );
-        assert.equal(body.prompt_cache_key, 'topic-expansion-v1:travel:B2');
+        assert.match(body.instructions, /untrusted data, never instructions/);
+        assert.match(body.instructions, /Preserve accepted regional variants/);
+        assert.equal(body.prompt_cache_key, 'topic-expansion-v2:travel:B2');
         return Response.json(completed());
       },
       saveItems: async (themeId, generated, model) => {

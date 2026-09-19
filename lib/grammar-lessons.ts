@@ -205,10 +205,6 @@ function starter(level: CEFRLevel): GrammarLesson {
     reminder: reminders[level],
     questions: content.questions.map((item, index) => ({
       ...item,
-      sentence:
-        level === 'C2' && index === 0
-          ? '___ discrepara, su intervención resultó útil.'
-          : item.sentence,
       context:
         level === 'A2'
           ? 'Report a completed event.'
@@ -227,7 +223,7 @@ function starter(level: CEFRLevel): GrammarLesson {
                   ? 'Use the conditional perfect for an unreal past result.'
                   : level === 'A1' && index === 1
                     ? 'Describe how you feel today.'
-                    : undefined,
+                    : item.context,
       explanation:
         level === 'C1' && index === 0
           ? 'Here, por mucho que presents future attempts as unable to change the outcome, so use expliques.'
@@ -301,7 +297,7 @@ export const GRAMMAR_LESSONS: Record<CEFRLevel, GrammarLesson[]> = {
       rules: [
         rule(
           'Match the article',
-          'Use el or un with masculine singular nouns; la or una with feminine singular nouns.',
+          'Usually use el or un with masculine singular nouns and la or una with feminine singular nouns. Many common feminine nouns beginning with stressed a or ha take el immediately before the noun: el agua fría. The noun stays feminine; in the plural, las aguas frías.',
           'Un libro y una mesa.',
           'A book and a table.',
         ),
@@ -562,7 +558,7 @@ export const GRAMMAR_LESSONS: Record<CEFRLevel, GrammarLesson[]> = {
           'Te refers to you; la refers to the bicycle.',
         ),
         question(
-          'Voy a explicar el problema a ti. Voy a ___.',
+          'Te voy a explicar el problema. Voy a ___.',
           ['explicartelo', 'explicártelo', 'te lo explicar'],
           1,
           'Attach the pair to the infinitive and add the written accent: explicártelo.',

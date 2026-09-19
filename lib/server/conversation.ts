@@ -1,3 +1,4 @@
+import { readBoundedText } from './request-body';
 import { CEFR_GUIDANCE } from '@/lib/cefr';
 import {
   MAX_CONVERSATION_MESSAGE,
@@ -157,8 +158,8 @@ export async function conversationRequest(
     const userId = await deps.authenticate();
     if (!userId)
       throw new ConversationError(401, 'Sign in to practice a conversation.');
-    const raw = await request.text();
-    if (new TextEncoder().encode(raw).length > 16_000)
+    const raw = await readBoundedText(request, 16_000);
+    if (raw === null)
       throw new ConversationError(
         413,
         'This conversation is too long. Start a new one.',

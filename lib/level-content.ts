@@ -79,7 +79,7 @@ export const CONVERSATION_CONTENT: Record<CEFRLevel, ConversationContent> = {
   },
 };
 
-export type GrammarQuestion = { sentence: string; options: string[]; answer: number; explanation: string };
+export type GrammarQuestion = { sentence: string; context?: string; options: string[]; answer: number; explanation: string };
 export type GrammarContent = {
   eyebrow: string;
   title: string;
@@ -97,7 +97,7 @@ export const GRAMMAR_CONTENT: Record<CEFRLevel, GrammarContent> = {
     whyTitle: 'Build accurate basics', why: 'These three verbs carry identity, state, location, age, and possession.',
     questions: [
       { sentence: 'Yo ___ de Estados Unidos.', options: ['soy', 'estoy', 'tengo'], answer: 0, explanation: 'Use ser for origin: soy de Estados Unidos.' },
-      { sentence: 'Hoy ___ cansado.', options: ['soy', 'estoy', 'tengo'], answer: 1, explanation: 'Use estar for a temporary state: estoy cansado.' },
+      { sentence: 'Hoy ___ cansado.', options: ['soy', 'estoy', 'tengo'], answer: 1, explanation: 'Use estar to describe how you feel here: estoy cansado.' },
       { sentence: 'Ella ___ treinta años.', options: ['es', 'está', 'tiene'], answer: 2, explanation: 'Spanish uses tener to express age.' },
       { sentence: 'Nosotros ___ en casa.', options: ['somos', 'estamos', 'tenemos'], answer: 1, explanation: 'Use estar for location: estamos en casa.' },
     ],
@@ -108,7 +108,7 @@ export const GRAMMAR_CONTENT: Record<CEFRLevel, GrammarContent> = {
     description: 'Choose the form for completed actions in familiar situations.',
     whyTitle: 'Describe recent events', why: 'The preterite lets you report completed actions and tell someone what happened.',
     questions: [
-      { sentence: 'Ayer ___ al mercado.', options: ['fui', 'iba', 'voy'], answer: 0, explanation: 'Ayer marks a completed trip, so use fui.' },
+      { sentence: 'Ayer ___ al mercado.', options: ['fui', 'iba', 'voy'], answer: 0, explanation: 'Present this trip as a completed whole: fui. Ayer alone does not determine the tense.' },
       { sentence: 'Anoche ___ pasta.', options: ['cené', 'cenaba', 'ceno'], answer: 0, explanation: 'A completed meal last night uses the preterite: cené.' },
       { sentence: 'El sábado mis amigos me ___.', options: ['llamaron', 'llamaban', 'llaman'], answer: 0, explanation: 'A completed call on Saturday uses llamaron.' },
       { sentence: 'Después ___ una película.', options: ['vimos', 'veíamos', 'vemos'], answer: 0, explanation: 'Después continues a sequence of completed actions: vimos.' },
@@ -120,10 +120,10 @@ export const GRAMMAR_CONTENT: Record<CEFRLevel, GrammarContent> = {
     description: 'Choose the form that matches the story. You’ll get the reason after every answer.',
     whyTitle: 'Tell a clearer story', why: 'Use the imperfect for the scene and recurring habits. Use the preterite for the event that moved the story forward.',
     questions: [
-      { sentence: 'Ayer ___ al mercado antes de cenar.', options: ['iba', 'fui', 'he ido'], answer: 1, explanation: '“Ayer” and the completed trip point to the preterite: fui.' },
+      { sentence: 'Ayer ___ al mercado antes de cenar.', options: ['iba', 'fui', 'he ido'], answer: 1, explanation: 'The requested completed-trip viewpoint calls for fui. Ayer can also appear with the imperfect.' },
       { sentence: 'Cuando vivía en Madrid, ___ al trabajo todos los días.', options: ['caminé', 'caminaba', 'he caminado'], answer: 1, explanation: 'A repeated background habit uses the imperfect: caminaba.' },
       { sentence: 'Mientras cenábamos, ___ el teléfono.', options: ['sonó', 'sonaba', 'ha sonado'], answer: 0, explanation: 'The call is a completed event that interrupted the background action: sonó.' },
-      { sentence: 'De niño, siempre ___ los veranos con mis abuelos.', options: ['pasé', 'pasaba', 'he pasado'], answer: 1, explanation: '“Siempre” describes a recurring childhood routine, so use pasaba.' },
+      { sentence: 'De niño, siempre ___ los veranos con mis abuelos.', options: ['pasé', 'pasaba', 'he pasado'], answer: 1, explanation: 'Here the requested ongoing childhood-habit viewpoint calls for pasaba. Siempre alone does not determine the tense.' },
     ],
     upcoming: [{ title: 'Present subjunctive', detail: 'Wishes and recommendations' }, { title: 'Object pronouns', detail: 'Placement and combinations' }],
   },
@@ -144,7 +144,7 @@ export const GRAMMAR_CONTENT: Record<CEFRLevel, GrammarContent> = {
     description: 'Choose structures that preserve stance, concession, and emphasis.',
     whyTitle: 'Control the reader’s interpretation', why: 'Advanced grammar changes how strongly a claim is presented, not only whether it is correct.',
     questions: [
-      { sentence: 'Por mucho que lo ___, no cambiará de opinión.', options: ['explicas', 'expliques', 'explicarás'], answer: 1, explanation: 'Por mucho que introduces a concessive idea and takes the subjunctive.' },
+      { sentence: 'Por mucho que lo ___, no cambiará de opinión.', context: 'Refer to possible future attempts, not attempts asserted as facts.', options: ['explicas', 'expliques', 'explicarás'], answer: 1, explanation: 'For these possible future attempts, use expliques. Por mucho que can also take the indicative when the effort is asserted as fact.' },
       { sentence: 'No es que no me ___; es que necesito más datos.', options: ['interesa', 'interese', 'interesará'], answer: 1, explanation: 'No es que rejects a possible interpretation and normally takes the subjunctive.' },
       { sentence: 'De haberlo sabido, te ___.', options: ['avisaba', 'habría avisado', 'avisaré'], answer: 1, explanation: 'De haberlo sabido expresses an unreal past condition, followed by the conditional perfect.' },
       { sentence: 'Sea como ___, tendremos que decidir hoy.', options: ['es', 'sea', 'será'], answer: 1, explanation: 'Sea como sea is a fixed concessive construction.' },
@@ -156,8 +156,8 @@ export const GRAMMAR_CONTENT: Record<CEFRLevel, GrammarContent> = {
     description: 'Distinguish structures whose differences are grammatical, pragmatic, and stylistic.',
     whyTitle: 'Make deliberate choices', why: 'At C2, grammar is also a tool for controlling implication, rhythm, distance, and voice.',
     questions: [
-      { sentence: '___ que discrepara, su intervención resultó útil.', options: ['Aun', 'Aun cuando', 'Con que'], answer: 1, explanation: 'Aun cuando introduces a concession; discrepara presents it with interpretive distance.' },
-      { sentence: 'No por ___ antes habría sido más convincente.', options: ['hablar', 'haber hablado', 'habría hablado'], answer: 1, explanation: 'No por haber hablado antes nominalizes the prior action without asserting a different outcome.' },
+      { sentence: '___ discrepara, su intervención resultó útil.', options: ['Aun', 'Aun cuando', 'Con que'], answer: 1, explanation: 'Aun cuando introduces a concession; discrepara presents it with interpretive distance.' },
+      { sentence: 'No por ___ antes habría sido más convincente.', context: 'Use a perfect infinitive to explicitly mark the action as completed earlier.', options: ['hablar', 'haber hablado', 'habría hablado'], answer: 1, explanation: 'No por haber hablado antes nominalizes the prior action without asserting a different outcome.' },
       { sentence: 'La propuesta, ___ viable, exige cautela.', options: ['si bien', 'por más', 'con tal de'], answer: 0, explanation: 'Si bien introduces a concise formal concession.' },
       { sentence: 'Huelga ___ que el acuerdo sigue sujeto a revisión.', options: ['decir', 'diga', 'dicho'], answer: 0, explanation: 'Huelga decir is a formal fixed expression meaning that something goes without saying.' },
     ],
