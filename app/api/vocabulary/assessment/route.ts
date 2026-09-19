@@ -152,6 +152,7 @@ type Challenge = {
   scope: AssessmentScope;
   targetId: string;
   targetKey: string;
+  assisted: boolean;
   expires: number;
   recallPrompt: string;
   usePrompt: string;
@@ -205,6 +206,9 @@ export async function POST(request: Request) {
         );
     }
     if (body.action === 'start') {
+      if (body.assisted !== undefined && typeof body.assisted !== 'boolean')
+        throw new RequestError(400, 'The check type could not be verified.');
+      const assisted = body.assisted === true;
       const scope = scopeOf(body);
       const { targets } = await loadAssessmentTargets(
         client,
@@ -229,6 +233,7 @@ export async function POST(request: Request) {
         apiKey,
         model,
         request.signal,
+        !assisted,
       );
       const id = randomUUID();
       const challenge: Challenge = {
@@ -239,6 +244,7 @@ export async function POST(request: Request) {
         scope,
         targetId: target.id,
         targetKey: target.key,
+        assisted,
         expires: Date.now() + 30 * 60_000,
         recallPrompt: target.english,
         usePrompt: task.prompt,
@@ -348,7 +354,8 @@ export async function POST(request: Request) {
         409,
         'Your level changed during the check. Start a check at your current level.',
       );
-    const status = body.assisted
+    const assisted = challenge.assisted === true || body.assisted;
+    const status = assisted
       ? 'not_assessed'
       : assessmentStatus(feedback.recall.verdict, feedback.use.verdict);
     const now = Date.now();

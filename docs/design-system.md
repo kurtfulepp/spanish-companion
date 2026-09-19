@@ -12,18 +12,18 @@ Executable tokens and shared hero styles live in [`app/design-system.css`](../ap
 
 ## Color roles
 
-| Role | Token / value | Use |
-| --- | --- | --- |
-| Page canvas | `--brand-canvas` / `#f6f1e8` | Warm cream page background |
-| Surface | `--brand-surface` / `#fffdfa` | Headers, cards, light controls |
-| Hero | `--brand-hero-fill` | Vocabulary's 115° coral `#e9513d` → orange `#ef6a43` at 48% → marigold `#f4a43b` gradient |
-| Wordmark accent | `--brand-flag-red` / `#aa151b`, `--brand-flag-gold` / `#f1bf00` | Small red ES in a white box with a yellow outer frame |
-| Strong warm ink | `--brand-ink` / `#7f302b` | Text on cream and peach; light hero controls |
-| Focus ink | `--brand-ink-strong` / `#7b211b` | Focus outlines and deep warm emphasis |
-| Supporting warm ink | `--brand-ink-muted` / `#79564c` | Descriptions on pale warm surfaces |
-| Topic surfaces | `--brand-peach` / `#fff0e8`, `--brand-cream` / `#fff4dc` | Dining cards, topic panels, supporting controls |
-| Small accents | `--brand-turquoise` / `#38b9b0`, `--brand-yellow` / `#ffd45b` | Sparse vocabulary-style geometric accents |
-| Border | `--brand-border` / `#e1d9cc` | Warm, quiet surface separation |
+| Role                | Token / value                                                   | Use                                                                                       |
+| ------------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Page canvas         | `--brand-canvas` / `#f6f1e8`                                    | Warm cream page background                                                                |
+| Surface             | `--brand-surface` / `#fffdfa`                                   | Headers, cards, light controls                                                            |
+| Hero                | `--brand-hero-fill`                                             | Vocabulary's 115° coral `#e9513d` → orange `#ef6a43` at 48% → marigold `#f4a43b` gradient |
+| Wordmark accent     | `--brand-flag-red` / `#aa151b`, `--brand-flag-gold` / `#f1bf00` | Small red ES in a white box with a yellow outer frame                                     |
+| Strong warm ink     | `--brand-ink` / `#7f302b`                                       | Text on cream and peach; light hero controls                                              |
+| Focus ink           | `--brand-ink-strong` / `#7b211b`                                | Focus outlines and deep warm emphasis                                                     |
+| Supporting warm ink | `--brand-ink-muted` / `#79564c`                                 | Descriptions on pale warm surfaces                                                        |
+| Topic surfaces      | `--brand-peach` / `#fff0e8`, `--brand-cream` / `#fff4dc`        | Dining cards, topic panels, supporting controls                                           |
+| Small accents       | `--brand-turquoise` / `#38b9b0`, `--brand-yellow` / `#ffd45b`   | Sparse vocabulary-style geometric accents                                                 |
+| Border              | `--brand-border` / `#e1d9cc`                                    | Warm, quiet surface separation                                                            |
 
 Do not introduce cobalt as a primary interface color or restore a dark-green welcome background. Green and blue occur in the existing illustration palette, topic-specific pastel cards, and progress states; that does not make either a default hero or brand color. Preserve those contextual roles. The legacy global `--primary` and dark-green panels are not the reference for new brand surfaces.
 
@@ -102,11 +102,9 @@ Use the original, unmodified still coach image with “¡Hola!” visible immedi
 
 The public kitchen simulation and its entry links are retired. The photo review screen requires actual API results and has no FPO banner or sample-data fallback. Internal kitchen fixtures live under `tests/fixtures`, outside public assets. Existing demo and legacy saved lists retain FPO labels so sample data cannot be mistaken for recognized vocabulary. Review uses editable English/Spanish rows with selection checkboxes, then a list preview. The final “Save list” opens a “Name My List” overlay with a freeform name and Save button. Accepted text, list names, and completion status persist to the signed-in profile for both real and demo lists. State that lists are available across devices. Existing browser lists transfer to the same user’s profile; preserve the local copy if transfer fails. Never persist photos. Saved list tiles appear below Create Your Own, with no fixed tile-count limit. Each tile has subtle top-right complete and trash icons. Completion moves the list into a collapsible Completed archive with a restore action; deletion confirms the specific list. Name lists only in the final overlay. On narrow screens, stack the language fields and allow collapsing the reference photo.
 
-
 ## Custom-list practice
 
 Custom list tiles and their word dialogs link to “Assess list”. Use the same scored recall and contextual-use flow as topic vocabulary. Show Known, Needs practice, and Not assessed, with an AI-assessed explanation and a visible challenge action. Retain historical self-ratings and manual archive/restore as separate account history; do not display old confident counts as assessed knowledge or auto-archive a list from one successful check.
-
 
 ## Level-personalized learning
 
@@ -121,6 +119,16 @@ A profile without a level does not receive assumed learning content. Show the sh
 ## Vocabulary topic experiences
 
 Every published topic card opens the shared topic experience: six real-world moments, an assessed recall-and-use check, an expression browser, saved progress, and optional controlled AI expansion. Dining Out is the layout reference; do not create separate route-specific interaction systems for later topics. Keep each topic's registered object illustration and pastel surface while retaining the shared warm typography, controls, and navigation.
+
+The Dining Out B2 pilot opens its current learning session directly from the topic card. It does not insert a topic overview or mode-choice screen between the vocabulary map and active learning. Keep **Browse all expressions** and **Check what I already know** as secondary actions in the compact learning header. This information architecture remains pilot-only until the owner approves applying it to other topics.
+
+New and Needs practice expression cards lead with **Learn expression** or **Learn again**. Learning reveals the Spanish, audio, usage guidance, and supported variation; **Practice expression** then opens that expression's two-step Recall → Use activity directly, without topic totals, history, or another start action. Show a short usage note as a quiet sentence directly beneath the expression; do not repeat a “How it works” heading in every card. Keep **Practice expression** as the primary next action. Present **Try a variation** as a quiet secondary disclosure beside it, with the writing field and comparison hidden until selected; the optional scaffold must not visually outweigh the expression. Because the answer was just shown, this immediate activity is fixed as assisted practice and cannot award Known. Reserve **Check now** for a due-review card's independent result. After any result, **Return to session** restores the learning session. The header-level **Check what I already know** action remains the entry to the whole-topic assessment overview.
+
+Place each **Listen** control in the same row as the Spanish expression it plays. Do not detach expression audio into a card corner or header where its target becomes ambiguous.
+
+In supported study, a user-initiated **Listen** action may load timing data with the expression audio. Highlight the current word with a restrained warm-gold treatment during playback. Once that audio is cached in the current browser session, make each word keyboard- and pointer-operable for replay; desktop hover may replay after a short delay, while click or tap remains the primary control. Hover must never generate audio or spend speech credits, and word replay must reuse a decoded copy of the cached phrase rather than seek through compressed audio or create separate clips. Use precise timed playback with short edge fades so word boundaries do not click, clip, or drift into adjacent speech.
+
+For structured topic learning, distinguish the full catalog, progression sets, and the current working session. Keep the working session to six expressions, mix a limited number of due or Needs practice items with new material, and do not render an entire 24-expression set as one exercise. Supported study may reveal audio, usage guidance, and a contextual variation, but must remain visibly separate from an independent check. Describe complete delayed evidence as **All expressions retained**, not mastery or verified proficiency.
 
 Assessments prioritize identified gaps, then unassessed expressions and due reviews. Each check uses typed recall and a fresh contextual response; show feedback only after both responses. Browsing and recently assisted practice do not award Known. “Add 12 expressions” is an explicit learner action, not an automatic page-load cost. Label personally generated material “Expanded” and preserve its stable progress identity. Keep operational model, quota, and storage details out of the interface.
 

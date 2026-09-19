@@ -27,7 +27,7 @@ const built = await build({
           contents:
             path === 'client'
               ? `let client; export const setClient = v => {client=v}; export const createClient = async () => client;`
-              : `export const ASSESSMENT_MODEL = 'test-model'; export const ai = { calls: 0, recall: 'correct', use: 'correct', fail: false, afterGrade: null }; export async function generateUsePrompt() { ai.calls++; if(ai.fail) throw new Error('Unavailable'); return {prompt:'You have finished dinner. Ask your server for the bill.',sample:'¿Me trae la cuenta, por favor?',criterion:'Ask for the bill politely.'}; } export async function gradeAssessment() { ai.calls++; if(ai.afterGrade) ai.afterGrade(); if(ai.fail) throw new Error('Unavailable'); return {recall:{verdict:ai.recall,explanation:'Recall feedback.',example:'La cuenta, por favor.'},use:{verdict:ai.use,explanation:'Use feedback.',example:'¿Me trae la cuenta?'}}; }`,
+              : `export const ASSESSMENT_MODEL = 'test-model'; export const ai = { calls: 0, recall: 'correct', use: 'correct', fail: false, afterGrade: null, requireFresh: null }; export async function generateUsePrompt(_target,_level,_previous,_key,_model,_signal,requireFresh) { ai.calls++; ai.requireFresh=requireFresh; if(ai.fail) throw new Error('Unavailable'); return {prompt:'You have finished dinner. Ask your server for the bill.',sample:'¿Me trae la cuenta, por favor?',criterion:'Ask for the bill politely.'}; } export async function gradeAssessment() { ai.calls++; if(ai.afterGrade) ai.afterGrade(); if(ai.fail) throw new Error('Unavailable'); return {recall:{verdict:ai.recall,explanation:'Recall feedback.',example:'La cuenta, por favor.'},use:{verdict:ai.use,explanation:'Use feedback.',example:'¿Me trae la cuenta?'}}; }`,
         }));
       },
     },
@@ -86,6 +86,7 @@ function setup(options = {}) {
     use: 'correct',
     fail: false,
     afterGrade: null,
+    requireFresh: null,
   });
   const state = {
     rows: [],
@@ -346,6 +347,20 @@ test('incorrect, uncertain, skipped and assisted answers have distinct outcomes'
     await POST(request({ ...correct(challenge.token), recallAnswer: '' }))
   ).json();
   assert.equal(result.result.status, 'needs_practice');
+});
+test('a post-learning check permits a repeated prompt but cannot become independent evidence', async () => {
+  setup();
+  const challenge = await start({
+    themeId: 'dining-out',
+    targetId: itemId,
+    assisted: true,
+  });
+  assert.equal(ai.requireFresh, false);
+  assert.equal(openChallenge(challenge.token, secret).assisted, true);
+  const result = await (
+    await POST(request({ ...correct(challenge.token), assisted: false }))
+  ).json();
+  assert.equal(result.result.status, 'not_assessed');
 });
 test('challenge cannot be used after profile/content changes, expiry or account substitution', async () => {
   for (const change of ['level', 'content', 'expiry', 'owner', 'tamper']) {

@@ -66,7 +66,9 @@ export function VocabularyTopicPage({ themeId }: { themeId: string }) {
   const [learningSets, setLearningSets] = useState<VocabularyLearningSet[]>([]);
   const [mode, setMode] = useState<Mode>('overview');
   const [selectedSection, setSelectedSection] = useState('all');
-  const [assessmentTarget, setAssessmentTarget] = useState<string | undefined>();
+  const [assessmentTarget, setAssessmentTarget] = useState<
+    string | undefined
+  >();
   const [recentlyStudied, setRecentlyStudied] = useState(false);
   const [assessmentReturnMode, setAssessmentReturnMode] =
     useState<Mode>('overview');
@@ -165,12 +167,16 @@ export function VocabularyTopicPage({ themeId }: { themeId: string }) {
     if (profileLoading || !profile.proficiencyLevel || !userId) return;
     void (async () => {
       await loadTopic();
-      setMode('overview');
+      const nextMode =
+        themeId === 'dining-out' && profile.proficiencyLevel === 'B2'
+          ? 'explore'
+          : 'overview';
+      setMode(nextMode);
       setSelectedSection('all');
       setAssessmentTarget(undefined);
-      setAssessmentReturnMode('overview');
+      setAssessmentReturnMode(nextMode);
     })();
-  }, [loadTopic, profile.proficiencyLevel, profileLoading, userId]);
+  }, [loadTopic, profile.proficiencyLevel, profileLoading, themeId, userId]);
 
   const allItems = useMemo(
     () =>
@@ -213,7 +219,7 @@ export function VocabularyTopicPage({ themeId }: { themeId: string }) {
   function startDiagnostic() {
     setAssessmentTarget(undefined);
     setRecentlyStudied(false);
-    setAssessmentReturnMode('overview');
+    setAssessmentReturnMode(hasDiningOutPath ? 'explore' : 'overview');
     setMode('diagnostic');
   }
 
@@ -394,7 +400,7 @@ export function VocabularyTopicPage({ themeId }: { themeId: string }) {
           items={learningPathItems}
           sets={learningSets}
           voice={profile.voicePreference}
-          onBack={() => setMode('overview')}
+          onAssessAll={startDiagnostic}
           onAssess={assessExpression}
         />
       )}
@@ -530,8 +536,15 @@ export function VocabularyTopicPage({ themeId }: { themeId: string }) {
                           </p>
                         )}
                         <div className="mt-5 flex items-center gap-2 border-t border-border/70 pt-4">
-                          <button className="rounded-full bg-[var(--brand-gold)] px-4 py-2 text-sm font-semibold text-[var(--brand-ink)]" onClick={() => assessExpression(item.id, true)}>Check this expression</button>
-                          <span className="text-xs text-muted-foreground">Browsing does not mark it known.</span>
+                          <button
+                            className="rounded-full bg-[var(--brand-gold)] px-4 py-2 text-sm font-semibold text-[var(--brand-ink)]"
+                            onClick={() => assessExpression(item.id, true)}
+                          >
+                            Check this expression
+                          </button>
+                          <span className="text-xs text-muted-foreground">
+                            Browsing does not mark it known.
+                          </span>
                         </div>
                       </article>
                     );

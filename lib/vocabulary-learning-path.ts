@@ -31,6 +31,7 @@ export type LearningPathEntry<T extends LearningPathItem> = T & {
 };
 
 export type VocabularySetProgress = VocabularyLearningSet & {
+  checkedCount: number;
   knownCount: number;
   retainedCount: number;
 };
@@ -38,14 +39,21 @@ export type VocabularySetProgress = VocabularyLearningSet & {
 export type LearningPathSummary<T extends LearningPathItem> = {
   entries: LearningPathEntry<T>[];
   activeSet: VocabularySetProgress | null;
-  active: LearningPathEntry<T>[];
+  newItems: LearningPathEntry<T>[];
+  learning: LearningPathEntry<T>[];
   due: LearningPathEntry<T>[];
   known: LearningPathEntry<T>[];
   retained: LearningPathEntry<T>[];
   setProgress: VocabularySetProgress[];
   knownCount: number;
   retainedCount: number;
-  masteredForNow: boolean;
+  allRetained: boolean;
+};
+
+export type LearningSession<T extends LearningPathItem> = {
+  items: LearningPathEntry<T>[];
+  newRemaining: number;
+  practiceRemaining: number;
 };
 
 export function learningPathState(
@@ -95,23 +103,24 @@ export function buildLearningPath<T extends LearningPathItem>(
       );
       return {
         ...set,
+        checkedCount: setEntries.filter((entry) => entry.state !== 'new')
+          .length,
         knownCount: setEntries.filter((entry) =>
           ['known', 'due', 'retained'].includes(entry.state),
         ).length,
-        retainedCount: setEntries.filter(
-          (entry) => entry.state === 'retained',
-        ).length,
+        retainedCount: setEntries.filter((entry) => entry.state === 'retained')
+          .length,
       };
     });
   const activeSet =
-    setProgress.find((set) => set.knownCount < set.item_count) ?? null;
-  const active = activeSet
+    setProgress.find((set) => set.checkedCount < set.item_count) ?? null;
+  const newItems = activeSet
     ? entries.filter(
         (entry) =>
-          entry.learning_set_id === activeSet.id &&
-          (entry.state === 'new' || entry.state === 'learning'),
+          entry.learning_set_id === activeSet.id && entry.state === 'new',
       )
     : [];
+  const learning = entries.filter((entry) => entry.state === 'learning');
   const due = entries.filter((entry) => entry.state === 'due');
   const known = entries.filter((entry) => entry.state === 'known');
   const retained = entries.filter((entry) => entry.state === 'retained');
@@ -122,14 +131,60 @@ export function buildLearningPath<T extends LearningPathItem>(
   return {
     entries,
     activeSet,
-    active,
+    newItems,
+    learning,
     due,
     known,
     retained,
     setProgress,
     knownCount,
     retainedCount: retained.length,
-    masteredForNow:
-      entries.length > 0 && retained.length === entries.length && due.length === 0,
+    allRetained:
+      entries.length > 0 &&
+      retained.length === entries.length &&
+      due.length === 0,
+  };
+}
+
+export function buildLearningSession<T extends LearningPathItem>(
+  summary: LearningPathSummary<T>,
+  size = 6,
+): LearningSession<T> {
+  const items: LearningPathEntry<T>[] = [];
+  const selected = new Set<string>();
+
+  const add = (candidates: LearningPathEntry<T>[], limit: number) => {
+    for (const candidate of candidates) {
+      if (items.length >= size || limit <= 0) break;
+      if (selected.has(candidate.id)) continue;
+      items.push(candidate);
+      selected.add(candidate.id);
+      limit -= 1;
+    }
+  };
+
+  // Keep reviews present without allowing them to consume the entire session
+  // while the learner still has new curriculum to introduce.
+  add(summary.due, Math.min(2, size));
+  add(summary.learning, Math.min(2, Math.max(0, size - items.length)));
+  add(summary.newItems, size - items.length);
+
+  // Once the current set has no new items, use the remaining capacity for
+  // additional review work.
+  if (items.length < size) add(summary.due, size - items.length);
+  if (items.length < size) add(summary.learning, size - items.length);
+
+  return {
+    items,
+    newRemaining: Math.max(
+      0,
+      summary.newItems.filter((item) => !selected.has(item.id)).length,
+    ),
+    practiceRemaining: Math.max(
+      0,
+      [...summary.due, ...summary.learning].filter(
+        (item) => !selected.has(item.id),
+      ).length,
+    ),
   };
 }

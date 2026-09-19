@@ -45,7 +45,7 @@ function AssessmentSession({
     ? `themeId=${encodeURIComponent(scope.themeId)}`
     : `listId=${encodeURIComponent(scope.listId!)}`;
   const [error, setError] = useState('');
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState(Boolean(targetId));
   const [challenge, setChallenge] = useState<AssessmentChallenge | null>(null);
   const [stage, setStage] = useState<'overview' | 'recall' | 'use' | 'result'>(
     'overview',
@@ -62,11 +62,15 @@ function AssessmentSession({
   }, [stage]);
   useEffect(() => {
     const controller = new AbortController();
-    fetch(`/api/vocabulary/assessment?${queryString}`, {
-      cache: 'no-store',
-      signal: controller.signal,
-    })
-      .then(async (response) => {
+    void (async () => {
+      try {
+        const response = await fetch(
+          `/api/vocabulary/assessment?${queryString}`,
+          {
+            cache: 'no-store',
+            signal: controller.signal,
+          },
+        );
         const data = (await response.json()) as AssessmentCatalog & {
           error?: string;
         };
@@ -74,24 +78,64 @@ function AssessmentSession({
           throw new Error(
             data.error || 'Your assessments could not be loaded.',
           );
-        if (!controller.signal.aborted) {
-          setCatalog(data);
-          setError('');
-        }
-      })
-      .catch((failure) => {
+        if (controller.signal.aborted) return;
+        setCatalog(data);
+
+        if (!targetId) return;
+        if (!data.available)
+          throw new Error('Answer evaluation is not configured yet.');
+        if (!data.items.some((item) => item.id === targetId))
+          throw new Error(
+            'This expression is unavailable at your current level.',
+          );
+
+        const requestScope = Object.fromEntries(
+          new URLSearchParams(queryString),
+        );
+        const startResponse = await fetch('/api/vocabulary/assessment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'start',
+            ...requestScope,
+            targetId,
+            assisted: recentlyStudied,
+          }),
+          signal: controller.signal,
+        });
+        const startData = (await startResponse.json()) as {
+          error?: string;
+          challenge?: AssessmentChallenge;
+        };
+        if (!startResponse.ok)
+          throw new Error(
+            startData.error || 'The expression check could not be prepared.',
+          );
+        if (!startData.challenge)
+          throw new Error('The expression check could not be prepared.');
+        if (controller.signal.aborted) return;
+        setChallenge(startData.challenge);
+        setRecall('');
+        setUse('');
+        setResult(null);
+        setAssisted(recentlyStudied);
+        setStage('recall');
+      } catch (failure) {
         if (!controller.signal.aborted)
           setError(
             failure instanceof Error
               ? failure.message
               : 'Your assessments could not be loaded.',
           );
-      });
+      } finally {
+        if (targetId && !controller.signal.aborted) setBusy(false);
+      }
+    })();
     return () => {
       controller.abort();
       action.current?.abort();
     };
-  }, [queryString, reload]);
+  }, [queryString, recentlyStudied, reload, targetId]);
   async function post(body: object) {
     const controller = new AbortController();
     action.current = controller;
@@ -127,7 +171,12 @@ function AssessmentSession({
   }
   function start(id: string) {
     void run(async () => {
-      const data = await post({ action: 'start', ...scope, targetId: id });
+      const data = await post({
+        action: 'start',
+        ...scope,
+        targetId: id,
+        assisted: false,
+      });
       if (!data.challenge) throw new Error('A check could not be prepared.');
       setChallenge(data.challenge);
       setRecall('');
@@ -185,30 +234,45 @@ function AssessmentSession({
         : 'Not assessed';
   return (
     <section className={styles.panel} aria-busy={busy}>
-      <PracticeTimeTracker active={!!challenge && !busy && (stage === 'recall' || stage === 'use')} area="vocabulary" />
+      <PracticeTimeTracker
+        active={!!challenge && !busy && (stage === 'recall' || stage === 'use')}
+        area="vocabulary"
+      />
       <div className={styles.top}>
         {onExit ? (
           <button onClick={onExit} disabled={busy}>
             <ArrowLeft size={16} />
-            Back to vocabulary
+            {targetId ? 'Back to session' : 'Back to vocabulary'}
           </button>
         ) : (
           <a href="/vocabulary">All vocabulary</a>
         )}
-        <span>{catalog?.level} · Vocabulary assessment</span>
+        <span>
+          {catalog?.level} ·{' '}
+          {targetId ? '1 expression · 2 steps' : 'Vocabulary assessment'}
+        </span>
       </div>
       {error && (
         <div className={styles.error} role="alert">
           <p>{error}</p>
-          {!catalog && (
-            <button onClick={() => setReload((value) => value + 1)}>
+          {(!catalog || targetId) && (
+            <button
+              onClick={() => {
+                setError('');
+                if (targetId) setBusy(true);
+                setReload((value) => value + 1);
+              }}
+            >
               Try again
             </button>
           )}
         </div>
       )}
       {!catalog && !error && <output>Loading assessments…</output>}
-      {stage === 'overview' && catalog && (
+      {targetId && stage === 'overview' && !error && (
+        <output>Preparing expression check…</output>
+      )}
+      {stage === 'overview' && catalog && !targetId && (
         <>
           <h1 ref={heading} tabIndex={-1}>
             {catalog.title}
@@ -334,17 +398,23 @@ function AssessmentSession({
             Equivalent Spanish expressions and regional variants are accepted.
             Feedback appears after both answers.
           </p>
-          {stage === 'use' && (
-            <label className={styles.help}>
-              <input
-                type="checkbox"
-                checked={assisted}
-                onChange={(event) => setAssisted(event.target.checked)}
-                disabled={busy}
-              />
-              I used help or just reviewed the answer. Save this as practice.
-            </label>
-          )}
+          {stage === 'use' &&
+            (recentlyStudied ? (
+              <p className={styles.help}>
+                You just learned this expression. This check will be saved as
+                assisted practice; a later independent review can mark it Known.
+              </p>
+            ) : (
+              <label className={styles.help}>
+                <input
+                  type="checkbox"
+                  checked={assisted}
+                  onChange={(event) => setAssisted(event.target.checked)}
+                  disabled={busy}
+                />
+                I used help or just reviewed the answer. Save this as practice.
+              </label>
+            ))}
           <div className={styles.actions}>
             <button
               type="submit"
@@ -380,7 +450,7 @@ function AssessmentSession({
         <>
           <span className={styles.resultLabel}>
             <Check size={17} />
-            Saved result · AI-assessed
+            {assisted ? 'Saved practice' : 'Saved result'} · AI-assessed
           </span>
           <h1 ref={heading} tabIndex={-1}>
             {statusLabel}
@@ -388,13 +458,15 @@ function AssessmentSession({
           <p>
             {result.disputed
               ? 'You challenged this result. It no longer contributes to your knowledge or practice-gap counts. Take a fresh check to reassess it.'
-              : result.status === 'not_assessed'
-                ? 'This check did not establish an independent result. Assisted practice and uncertain answers are excluded from Known and Needs practice.'
-                : result.status === 'known'
-                  ? result.retained
-                    ? 'You demonstrated recall and use again after a delay.'
-                    : 'You demonstrated recall and use in this check. A later review will check retention.'
-                  : 'This check identified a vocabulary gap. Review the feedback, then try a fresh check.'}
+              : assisted
+                ? 'This immediate check was saved as assisted practice. A later independent review can establish Known.'
+                : result.status === 'not_assessed'
+                  ? 'This check did not establish an independent result. Assisted practice and uncertain answers are excluded from Known and Needs practice.'
+                  : result.status === 'known'
+                    ? result.retained
+                      ? 'You demonstrated recall and use again after a delay.'
+                      : 'You demonstrated recall and use in this check. A later review will check retention.'
+                    : 'This check identified a vocabulary gap. Review the feedback, then try a fresh check.'}
           </p>
           {(['recall', 'use'] as const).map((kind) => (
             <div key={kind} className={styles.feedback}>
@@ -428,13 +500,17 @@ function AssessmentSession({
             <button
               className={styles.primary}
               onClick={() => {
+                if (targetId && onExit) {
+                  onExit();
+                  return;
+                }
                 setStage('overview');
                 setChallenge(null);
               }}
               disabled={busy}
             >
-              Back to assessments
-              <ArrowRight size={18} />
+              {targetId ? 'Return to session' : 'Back to assessments'}
+              {targetId ? <ArrowLeft size={18} /> : <ArrowRight size={18} />}
             </button>
             {!result.disputed && (
               <button

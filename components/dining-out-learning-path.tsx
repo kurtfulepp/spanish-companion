@@ -3,20 +3,21 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   Archive,
+  BookOpen,
   Check,
   CheckCircle2,
   ChevronDown,
-  Clock3,
-  Eye,
   LoaderCircle,
   LockKeyhole,
 } from 'lucide-react';
 import { SpeechButton } from '@/components/speech-button';
+import { TimedSpeechExpression } from '@/components/timed-speech-expression';
 import type { CEFRLevel } from '@/lib/cefr';
 import type { VoicePreference } from '@/lib/speech';
 import type { AssessmentCatalog } from '@/lib/vocabulary-assessment';
 import {
   buildLearningPath,
+  buildLearningSession,
   type VocabularyLearningSet,
 } from '@/lib/vocabulary-learning-path';
 
@@ -52,19 +53,20 @@ export function DiningOutLearningPath({
   items,
   sets,
   voice,
-  onBack,
+  onAssessAll,
   onAssess,
 }: {
   items: DiningOutPathItem[];
   sets: VocabularyLearningSet[];
   voice: VoicePreference;
-  onBack: () => void;
+  onAssessAll: () => void;
   onAssess: (itemId: string, recentlyStudied: boolean) => void;
 }) {
   const [catalog, setCatalog] = useState<AssessmentCatalog | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [revealed, setRevealed] = useState<Set<string>>(() => new Set());
+  const [browsing, setBrowsing] = useState(false);
   const [now, setNow] = useState(0);
 
   useEffect(() => {
@@ -100,15 +102,26 @@ export function DiningOutLearningPath({
     () => buildLearningPath(items, sets, catalog, now),
     [catalog, items, now, sets],
   );
+  const session = useMemo(() => buildLearningSession(path), [path]);
   const total = path.entries.length;
-  const progress = total ? Math.round((path.knownCount / total) * 100) : 0;
-  const activeByMoment = useMemo(() => {
+  const checkedCount = path.entries.filter(
+    (item) => item.state !== 'new',
+  ).length;
+  const progress = total ? Math.round((checkedCount / total) * 100) : 0;
+  const browseGroups = useMemo(() => {
     const groups = new Map<
       string,
-      { title: string; description: string; sort: number; items: typeof path.active }
+      {
+        id: string;
+        title: string;
+        description: string;
+        sort: number;
+        items: typeof path.entries;
+      }
     >();
-    for (const item of path.active) {
+    for (const item of path.entries) {
       const group = groups.get(item.sectionId) ?? {
+        id: item.sectionId,
         title: item.sectionTitle,
         description: item.sectionDescription,
         sort: item.sectionSort,
@@ -118,7 +131,7 @@ export function DiningOutLearningPath({
       groups.set(item.sectionId, group);
     }
     return [...groups.values()].sort((a, b) => a.sort - b.sort);
-  }, [path.active]);
+  }, [path.entries]);
 
   function reveal(id: string) {
     setRevealed((current) => new Set(current).add(id));
@@ -128,23 +141,37 @@ export function DiningOutLearningPath({
     <section className="mx-auto mt-3 max-w-[1360px]">
       <div className="overflow-hidden rounded-[28px] bg-[var(--brand-surface)] shadow-[0_18px_55px_rgba(48,51,38,.1)] ring-1 ring-[var(--brand-border)]">
         <div className="border-b border-[var(--brand-border)] bg-[linear-gradient(115deg,#fff0e8,#fff4dc)] px-5 py-7 sm:px-8 sm:py-9">
-          <button
-            type="button"
-            onClick={onBack}
-            className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--brand-ink-muted)] hover:text-[var(--brand-ink)]"
-          >
-            <span aria-hidden="true">←</span>
-            Topic overview
-          </button>
-          <div className="mt-5 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="eyebrow">B2 learning path</p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setBrowsing((current) => !current)}
+                aria-expanded={browsing}
+                className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[var(--brand-border)] bg-white/70 px-4 text-sm font-semibold text-[var(--brand-ink)] hover:bg-white"
+              >
+                <BookOpen className="size-4" />
+                {browsing ? 'Return to session' : 'Browse all expressions'}
+              </button>
+              <button
+                type="button"
+                onClick={onAssessAll}
+                className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[var(--brand-border)] bg-white/70 px-4 text-sm font-semibold text-[var(--brand-ink)] hover:bg-white"
+              >
+                <Check className="size-4" />
+                Check what I already know
+              </button>
+            </div>
+          </div>
+          <div className="mt-6 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <p className="eyebrow">B2 learning path</p>
-              <h1 className="mt-2 text-4xl font-semibold tracking-[-.055em] text-[var(--brand-ink)] sm:text-5xl">
+              <h1 className="text-4xl font-semibold tracking-[-.055em] text-[var(--brand-ink)] sm:text-5xl">
                 Dining Out
               </h1>
               <p className="mt-3 max-w-2xl text-base leading-relaxed text-[var(--brand-ink-muted)]">
-                {total} expressions across six moments. Check recall and use to
-                move an expression out of active practice.
+                {total} expressions across six moments. Work in focused
+                six-expression sessions, with earlier gaps brought back for
+                review.
               </p>
             </div>
             <div className="grid min-w-[280px] grid-cols-3 gap-2 text-center">
@@ -160,22 +187,23 @@ export function DiningOutLearningPath({
             />
           </div>
           <p className="mt-2 text-xs font-medium text-[var(--brand-ink-muted)]">
-            {progress}% checked · retention is confirmed by a later review
+            {checkedCount}/{total} checked · retention is confirmed by a later
+            independent review
           </p>
         </div>
 
         <div className="px-5 py-6 sm:px-8 sm:py-8">
-          <div className="grid gap-2 sm:grid-cols-5">
+          <div className="flex gap-2 overflow-x-auto pb-2 sm:grid sm:grid-cols-5 sm:overflow-visible sm:pb-0">
             {path.setProgress.map((set) => {
-              const complete = set.knownCount === set.item_count;
+              const introduced = set.checkedCount === set.item_count;
               const current = set.id === path.activeSet?.id;
               return (
                 <div
                   key={set.id}
-                  className={`rounded-[16px] border px-3 py-3 ${
+                  className={`w-48 shrink-0 rounded-[16px] border px-3 py-3 sm:w-auto ${
                     current
                       ? 'border-[var(--brand-flag-gold)] bg-[var(--brand-cream)]'
-                      : complete
+                      : introduced
                         ? 'border-[#b8d9cc] bg-[#f0f8f4]'
                         : 'border-[var(--brand-border)] bg-white'
                   }`}
@@ -184,7 +212,7 @@ export function DiningOutLearningPath({
                     <span className="text-xs font-bold uppercase tracking-[.08em] text-[var(--brand-ink-muted)]">
                       Set {set.set_number}
                     </span>
-                    {complete ? (
+                    {introduced ? (
                       <CheckCircle2 className="size-4 text-[#357a62]" />
                     ) : current ? (
                       <span className="size-2 rounded-full bg-[var(--brand-flag-red)]" />
@@ -196,7 +224,8 @@ export function DiningOutLearningPath({
                     {set.title}
                   </p>
                   <p className="mt-1 text-xs text-[var(--brand-ink-muted)]">
-                    {set.knownCount}/{set.item_count} known
+                    {set.checkedCount}/{set.item_count} checked ·{' '}
+                    {set.knownCount} known
                   </p>
                 </div>
               );
@@ -215,107 +244,87 @@ export function DiningOutLearningPath({
             </p>
           )}
 
-          {path.due.length > 0 && (
-            <div className="mt-9 rounded-[22px] border border-[#e9c67a] bg-[#fff8e7] p-5 sm:p-6">
-              <div className="flex items-center gap-2">
-                <Clock3 className="size-5 text-[var(--brand-ink)]" />
-                <h2 className="text-xl font-semibold tracking-[-.03em] text-[var(--brand-ink)]">
-                  Due for review
-                </h2>
-              </div>
-              <p className="mt-1 text-sm text-[var(--brand-ink-muted)]">
-                Recheck these without opening the answer first.
-              </p>
-              <div className="mt-4 grid gap-3 md:grid-cols-2">
-                {path.due.map((item) => (
-                  <PromptCard
-                    key={item.id}
-                    item={item}
-                    voice={voice}
-                    revealed={revealed.has(item.id)}
-                    onReveal={() => reveal(item.id)}
-                    onAssess={onAssess}
-                  />
-                ))}
-              </div>
-            </div>
+          {!loading && browsing && (
+            <ExpressionBrowser groups={browseGroups} voice={voice} />
           )}
 
-          {path.masteredForNow ? (
-            <div className="mt-9 rounded-[24px] border border-[#b8d9cc] bg-[#f0f8f4] p-7 text-center">
-              <CheckCircle2 className="mx-auto size-8 text-[#357a62]" />
-              <h2 className="mt-3 text-2xl font-semibold tracking-[-.035em] text-[var(--brand-ink)]">
-                Dining Out mastered for now
-              </h2>
-              <p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-[var(--brand-ink-muted)]">
-                You recalled and used all {total} expressions after a delay. A
-                later missed review can return an expression to practice.
-              </p>
-            </div>
-          ) : path.activeSet ? (
-            <div className="mt-10">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <p className="eyebrow">Current set · {path.active.length} active</p>
-                  <h2 className="mt-1 text-3xl font-semibold tracking-[-.045em] text-[var(--brand-ink)]">
-                    {path.activeSet.title}
-                  </h2>
-                  <p className="mt-1 text-sm text-[var(--brand-ink-muted)]">
-                    {path.activeSet.description}
-                  </p>
-                </div>
-                <p className="text-sm font-semibold text-[var(--brand-ink-muted)]">
-                  {path.activeSet.knownCount}/{path.activeSet.item_count} known
+          {!loading &&
+            !browsing &&
+            (path.allRetained ? (
+              <div className="mt-9 rounded-[24px] border border-[#b8d9cc] bg-[#f0f8f4] p-7 text-center">
+                <CheckCircle2 className="mx-auto size-8 text-[#357a62]" />
+                <h2 className="mt-3 text-2xl font-semibold tracking-[-.035em] text-[var(--brand-ink)]">
+                  All expressions retained
+                </h2>
+                <p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-[var(--brand-ink-muted)]">
+                  You recalled and used all {total} expressions after a delay. A
+                  later missed review can return an expression to practice.
                 </p>
               </div>
-
-              <div className="mt-7 space-y-9">
-                {activeByMoment.map((moment) => (
-                  <section key={moment.title}>
-                    <div className="mb-3">
-                      <p className="eyebrow">Moment {moment.sort}</p>
-                      <h3 className="mt-1 text-xl font-semibold tracking-[-.025em] text-[var(--brand-ink)]">
-                        {moment.title}
-                      </h3>
-                      <p className="mt-1 text-sm text-[var(--brand-ink-muted)]">
-                        {moment.description}
+            ) : session.items.length > 0 ? (
+              <div className="mt-10">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <p className="eyebrow">
+                      Current session · {session.items.length} expressions
+                    </p>
+                    <h2 className="mt-1 text-3xl font-semibold tracking-[-.045em] text-[var(--brand-ink)]">
+                      {path.activeSet?.title ?? 'Review queue'}
+                    </h2>
+                    <p className="mt-1 text-sm text-[var(--brand-ink-muted)]">
+                      {path.activeSet
+                        ? `${path.activeSet.description} Earlier gaps are mixed in without taking over the session.`
+                        : 'All expressions have been introduced. This session focuses on due reviews and identified gaps.'}
+                    </p>
+                  </div>
+                  <div className="text-sm font-semibold text-[var(--brand-ink-muted)] sm:text-right">
+                    {session.newRemaining > 0 && (
+                      <p>
+                        {session.newRemaining} new remain after this session
                       </p>
-                    </div>
-                    <div className="grid gap-3 md:grid-cols-2">
-                      {moment.items.map((item) => (
-                        <PromptCard
-                          key={item.id}
-                          item={item}
-                          voice={voice}
-                          revealed={revealed.has(item.id)}
-                          onReveal={() => reveal(item.id)}
-                          onAssess={onAssess}
-                        />
-                      ))}
-                    </div>
-                  </section>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="mt-9 rounded-[22px] bg-[var(--brand-cream)] p-6">
-              <h2 className="text-xl font-semibold text-[var(--brand-ink)]">
-                All {total} expressions are known
-              </h2>
-              <p className="mt-2 text-sm text-[var(--brand-ink-muted)]">
-                Delayed reviews will confirm which expressions are retained.
-              </p>
-            </div>
-          )}
+                    )}
+                    {session.practiceRemaining > 0 && (
+                      <p>
+                        {session.practiceRemaining} reviews remain after this
+                        session
+                      </p>
+                    )}
+                  </div>
+                </div>
 
-          {path.known.length > 0 && (
+                <div className="mt-7 grid gap-3 md:grid-cols-2">
+                  {session.items.map((item) => (
+                    <PromptCard
+                      key={item.id}
+                      item={item}
+                      voice={voice}
+                      revealed={revealed.has(item.id)}
+                      onReveal={() => reveal(item.id)}
+                      onAssess={onAssess}
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="mt-9 rounded-[22px] bg-[var(--brand-cream)] p-6">
+                <h2 className="text-xl font-semibold text-[var(--brand-ink)]">
+                  No expressions need attention now
+                </h2>
+                <p className="mt-2 text-sm text-[var(--brand-ink-muted)]">
+                  Your next delayed reviews will confirm which expressions are
+                  retained.
+                </p>
+              </div>
+            ))}
+
+          {!browsing && path.known.length > 0 && (
             <ArchiveDrawer
               title={`Known · ${path.known.length}`}
               description="Hidden from active practice until the delayed review is due."
               items={path.known}
             />
           )}
-          {path.retained.length > 0 && (
+          {!browsing && path.retained.length > 0 && (
             <ArchiveDrawer
               title={`Retained · ${path.retained.length}`}
               description="Confirmed by a later independent check."
@@ -339,6 +348,91 @@ function Metric({ value, label }: { value: number; label: string }) {
   );
 }
 
+function ExpressionBrowser({
+  groups,
+  voice,
+}: {
+  groups: Array<{
+    id: string;
+    title: string;
+    description: string;
+    sort: number;
+    items: Array<
+      DiningOutPathItem & {
+        state: keyof typeof statusCopy;
+      }
+    >;
+  }>;
+  voice: VoicePreference;
+}) {
+  const total = groups.reduce((sum, group) => sum + group.items.length, 0);
+
+  return (
+    <section className="mt-10" aria-labelledby="expression-browser-title">
+      <p className="eyebrow">Reference</p>
+      <h2
+        id="expression-browser-title"
+        className="mt-1 text-3xl font-semibold tracking-[-.045em] text-[var(--brand-ink)]"
+      >
+        All {total} expressions
+      </h2>
+      <p className="mt-2 text-sm text-[var(--brand-ink-muted)]">
+        Browse by moment. Opening an expression here does not change your
+        progress.
+      </p>
+
+      <div className="mt-6 space-y-3">
+        {groups.map((group) => (
+          <details
+            key={group.id}
+            className="group rounded-[20px] border border-[var(--brand-border)] bg-white"
+          >
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 sm:px-6">
+              <div>
+                <p className="eyebrow">Moment {group.sort}</p>
+                <h3 className="mt-1 text-lg font-semibold text-[var(--brand-ink)]">
+                  {group.title}
+                </h3>
+                <p className="mt-1 text-sm text-[var(--brand-ink-muted)]">
+                  {group.description} · {group.items.length} expressions
+                </p>
+              </div>
+              <ChevronDown className="size-5 shrink-0 text-[var(--brand-ink-muted)] transition-transform group-open:rotate-180" />
+            </summary>
+            <div className="divide-y divide-[var(--brand-border)] border-t border-[var(--brand-border)] px-5 sm:px-6">
+              {group.items.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-start justify-between gap-4 py-4"
+                >
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-semibold leading-snug text-[var(--brand-ink)]">
+                        {item.spanish}
+                      </p>
+                      <span className="rounded-full bg-[var(--brand-cream)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[.06em] text-[var(--brand-ink-muted)]">
+                        {statusCopy[item.state]}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-sm text-[var(--brand-ink-muted)]">
+                      {item.english}
+                    </p>
+                  </div>
+                  <SpeechButton
+                    text={item.spanish}
+                    voice={voice}
+                    className="shrink-0"
+                  />
+                </div>
+              ))}
+            </div>
+          </details>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function PromptCard({
   item,
   voice,
@@ -354,6 +448,11 @@ function PromptCard({
   onReveal: () => void;
   onAssess: (itemId: string, recentlyStudied: boolean) => void;
 }) {
+  const [variation, setVariation] = useState('');
+  const [variationOpen, setVariationOpen] = useState(false);
+  const [compared, setCompared] = useState(false);
+  const needsLearning = item.state === 'new' || item.state === 'learning';
+
   return (
     <article className="rounded-[20px] border border-[var(--brand-border)] bg-white p-4 shadow-[0_7px_22px_rgba(48,51,38,.055)] sm:p-5">
       <div className="flex items-start justify-between gap-3">
@@ -367,66 +466,157 @@ function PromptCard({
                 {item.introduced_level} foundation
               </span>
             )}
+            <span className="rounded-full bg-[var(--brand-cream)] px-2.5 py-1 text-[11px] font-bold uppercase tracking-[.06em] text-[var(--brand-ink-muted)]">
+              Moment {item.sectionSort} · {item.sectionTitle}
+            </span>
           </div>
           <h4 className="mt-3 text-base font-semibold leading-snug text-[var(--brand-ink)]">
             {item.english}
           </h4>
         </div>
-        {revealed && (
-          <SpeechButton
-            text={item.spanish}
-            voice={voice}
-            className="shrink-0"
-          />
-        )}
       </div>
 
       {revealed ? (
         <div className="mt-4 border-t border-[var(--brand-border)] pt-4">
-          <p className="text-lg font-semibold leading-snug text-[#173c34]">
-            {item.spanish}
-          </p>
-          <div className="mt-3 rounded-[14px] bg-[#f7f5f1] p-3">
-            <p className="text-sm font-medium leading-relaxed">
-              {item.example_es}
-            </p>
-            <p className="mt-1 text-xs leading-relaxed text-[var(--brand-ink-muted)]">
-              {item.example_en}
-            </p>
-          </div>
+          <TimedSpeechExpression
+            key={`${item.id}-${voice}`}
+            text={item.spanish}
+            voice={voice}
+          />
           {item.usage_note && (
-            <p className="mt-3 text-xs leading-relaxed text-[var(--brand-ink-muted)]">
+            <p className="mt-2 text-sm leading-relaxed text-[var(--brand-ink-muted)]">
               {item.usage_note}
             </p>
           )}
         </div>
       ) : (
         <p className="mt-3 text-xs text-[var(--brand-ink-muted)]">
-          Check first for an unassisted result, or study the answer.
+          {needsLearning
+            ? item.state === 'learning'
+              ? 'Review the expression, then practice it again.'
+              : 'Learn the expression, then practice it in two steps.'
+            : 'Complete an independent check, or review the expression first.'}
         </p>
       )}
 
-      <div className="mt-4 flex flex-wrap gap-2">
+      {revealed ? (
+        <div className="mt-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => onAssess(item.id, true)}
+              className="inline-flex min-h-10 items-center gap-2 rounded-full bg-[var(--brand-flag-gold)] px-4 text-sm font-bold text-[var(--brand-ink)] hover:brightness-[.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-ink-strong)]"
+            >
+              <Check className="size-4" />
+              Practice expression
+            </button>
+            <button
+              type="button"
+              aria-expanded={variationOpen}
+              aria-controls={`variation-panel-${item.id}`}
+              onClick={() => setVariationOpen((open) => !open)}
+              className="inline-flex min-h-10 items-center gap-1.5 rounded-full px-3 text-sm font-semibold text-[var(--brand-ink-muted)] hover:bg-[var(--brand-cream)] hover:text-[var(--brand-ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-ink-strong)]"
+            >
+              Try a variation
+              <ChevronDown
+                className={`size-4 transition-transform motion-reduce:transition-none ${variationOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+          </div>
+          <p className="mt-2 text-xs leading-relaxed text-[var(--brand-ink-muted)]">
+            This immediate check is saved as practice. A later independent
+            review can mark the expression Known.
+          </p>
+          {variationOpen && (
+            <div
+              id={`variation-panel-${item.id}`}
+              className="mt-4 rounded-[14px] border border-[var(--brand-border)] bg-[var(--brand-surface)] p-3"
+            >
+              <p className="text-sm text-[var(--brand-ink)]">
+                {variationPrompt(item.sectionSort)}
+              </p>
+              <label htmlFor={`variation-${item.id}`} className="sr-only">
+                Write a variation in Spanish
+              </label>
+              <textarea
+                id={`variation-${item.id}`}
+                value={variation}
+                onChange={(event) => {
+                  setVariation(event.target.value);
+                  setCompared(false);
+                }}
+                rows={2}
+                placeholder="Write your version in Spanish"
+                className="mt-3 w-full resize-y rounded-[12px] border border-[var(--brand-border)] bg-white px-3 py-2 text-sm text-[var(--brand-ink)] outline-none focus:border-[var(--brand-flag-gold)] focus:ring-2 focus:ring-[var(--brand-flag-gold)]/25"
+              />
+              <button
+                type="button"
+                onClick={() => setCompared(true)}
+                disabled={!variation.trim()}
+                className="mt-2 inline-flex min-h-9 items-center rounded-full border border-[var(--brand-border)] bg-white px-3 text-sm font-semibold text-[var(--brand-ink)] hover:bg-[var(--brand-cream)] disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                Compare with an example
+              </button>
+              {compared && (
+                <div className="mt-3 border-t border-[var(--brand-border)] pt-3">
+                  <p className="text-xs font-bold uppercase tracking-[.06em] text-[var(--brand-ink-muted)]">
+                    One possible version
+                  </p>
+                  <p className="mt-1 text-sm font-medium leading-relaxed">
+                    {item.example_es}
+                  </p>
+                  <p className="mt-1 text-xs leading-relaxed text-[var(--brand-ink-muted)]">
+                    {item.example_en}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      ) : needsLearning ? (
         <button
           type="button"
-          onClick={() => onAssess(item.id, revealed)}
-          className="inline-flex min-h-10 items-center gap-2 rounded-full bg-[var(--brand-flag-gold)] px-4 text-sm font-bold text-[var(--brand-ink)] hover:brightness-[.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-ink-strong)]"
+          onClick={onReveal}
+          className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-full bg-[var(--brand-flag-gold)] px-4 text-sm font-bold text-[var(--brand-ink)] hover:brightness-[.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-ink-strong)]"
         >
-          <Check className="size-4" />
-          {revealed ? 'Practice check' : 'Check now'}
+          <BookOpen className="size-4" />
+          {item.state === 'learning' ? 'Learn again' : 'Learn expression'}
         </button>
-        {!revealed && (
+      ) : (
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => onAssess(item.id, false)}
+            className="inline-flex min-h-10 items-center gap-2 rounded-full bg-[var(--brand-flag-gold)] px-4 text-sm font-bold text-[var(--brand-ink)] hover:brightness-[.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-ink-strong)]"
+          >
+            <Check className="size-4" />
+            Check now
+          </button>
           <button
             type="button"
             onClick={onReveal}
             className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[var(--brand-border)] px-4 text-sm font-semibold text-[var(--brand-ink)] hover:bg-[var(--brand-cream)]"
           >
-            <Eye className="size-4" />
-            Study answer
+            <BookOpen className="size-4" />
+            Review expression
           </button>
-        )}
-      </div>
+        </div>
+      )}
     </article>
+  );
+}
+
+function variationPrompt(moment: number) {
+  const prompts: Record<number, string> = {
+    1: 'Change the party size, time, or seating preference.',
+    2: 'Change the dish, ingredient, flavor, or portion.',
+    3: 'Change the dish, quantity, or order of service.',
+    4: 'Change the restriction, substitution, or preparation request.',
+    5: 'Change the problem and the solution you want.',
+    6: 'Change the payment method, split, or charge.',
+  };
+  return (
+    prompts[moment] ?? 'Change one detail while keeping the expression useful.'
   );
 }
 
@@ -458,7 +648,9 @@ function ArchiveDrawer({
           <div key={item.id} className="flex items-start gap-2 text-sm">
             <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-[#357a62]" />
             <p>
-              <strong className="text-[var(--brand-ink)]">{item.spanish}</strong>
+              <strong className="text-[var(--brand-ink)]">
+                {item.spanish}
+              </strong>
               <span className="block text-xs text-[var(--brand-ink-muted)]">
                 {item.english}
               </span>

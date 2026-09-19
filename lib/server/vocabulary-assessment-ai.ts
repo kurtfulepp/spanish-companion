@@ -91,6 +91,7 @@ export async function generateUsePrompt(
   apiKey: string,
   model: string,
   signal?: AbortSignal,
+  requireFresh = true,
 ) {
   const data = await assessmentAI(
     `${ASSESSMENT_RUBRIC}\nCreate ONE fresh contextual production task in English requiring this target word/expression or an equivalent appropriate response. Use a concrete situation appropriate to the level. For a noun, ask for a brief sentence using it; for a phrase, elicit its communicative function. Never include the Spanish answer or translate the reference example. Supply an English prompt and a hidden Spanish sample answer plus a short English criterion. Avoid repeating the previous prompts.`,
@@ -120,7 +121,7 @@ export async function generateUsePrompt(
     )
   )
     throw new Error('A suitable assessment could not be prepared. Try again.');
-  if (previous.includes(data.prompt as string))
+  if (requireFresh && previous.includes(data.prompt as string))
     throw new Error('A fresh prompt could not be prepared. Try again.');
   return data as { prompt: string; sample: string; criterion: string };
 }

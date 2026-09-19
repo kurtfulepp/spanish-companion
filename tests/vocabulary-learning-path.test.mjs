@@ -9,9 +9,10 @@ const built = await build({
   platform: 'node',
   format: 'esm',
 });
-const { buildLearningPath, learningPathState } = await import(
-  `data:text/javascript;base64,${Buffer.from(built.outputFiles[0].text).toString('base64')}`
-);
+const { buildLearningPath, buildLearningSession, learningPathState } =
+  await import(
+    `data:text/javascript;base64,${Buffer.from(built.outputFiles[0].text).toString('base64')}`
+  );
 const sets = [
   {
     id: 'set-1',
@@ -56,41 +57,97 @@ test('uses evidence and due dates for learner-facing states', () => {
     'learning',
   );
   assert.equal(learningPathState(result('a', 'known'), now), 'known');
-  assert.equal(
-    learningPathState(result('a', 'known', true), now),
-    'retained',
-  );
+  assert.equal(learningPathState(result('a', 'known', true), now), 'retained');
   assert.equal(
     learningPathState(result('a', 'known', true, '2026-09-12'), now),
     'due',
   );
 });
 
-test('advances only when every expression in the current set is known', () => {
+test('advances after every expression in the current set has an independent result', () => {
   const first = buildLearningPath(
     items,
     sets,
     catalog(result('item-1', 'known')),
   );
   assert.equal(first.activeSet.id, 'set-1');
-  assert.deepEqual(first.active.map((item) => item.id), ['item-2']);
+  assert.deepEqual(
+    first.newItems.map((item) => item.id),
+    ['item-2'],
+  );
   const second = buildLearningPath(
     items,
     sets,
-    catalog(result('item-1', 'known'), result('item-2', 'known')),
+    catalog(result('item-1', 'known'), result('item-2', 'needs_practice')),
   );
   assert.equal(second.activeSet.id, 'set-2');
+  assert.deepEqual(second.newItems.map((item) => item.id).sort(), [
+    'item-3',
+    'item-4',
+  ]);
   assert.deepEqual(
-    second.active.map((item) => item.id).sort(),
-    ['item-3', 'item-4'],
+    second.learning.map((item) => item.id),
+    ['item-2'],
   );
 });
 
-test('requires delayed retention for mastered-for-now and reopens due work', () => {
+test('requires delayed retention for all-retained and reopens due work', () => {
   const retained = items.map((item) => result(item.id, 'known', true));
-  assert.equal(buildLearningPath(items, sets, catalog(...retained)).masteredForNow, true);
+  assert.equal(
+    buildLearningPath(items, sets, catalog(...retained)).allRetained,
+    true,
+  );
   retained[0] = result('item-1', 'known', true, '2020-01-01');
   const due = buildLearningPath(items, sets, catalog(...retained));
-  assert.equal(due.masteredForNow, false);
-  assert.deepEqual(due.due.map((item) => item.id), ['item-1']);
+  assert.equal(due.allRetained, false);
+  assert.deepEqual(
+    due.due.map((item) => item.id),
+    ['item-1'],
+  );
+});
+
+test('builds a six-item session that mixes reviews with new curriculum', () => {
+  const sessionSets = [
+    {
+      id: 'set-1',
+      set_number: 1,
+      title: 'First',
+      description: '',
+      item_count: 8,
+      content_version: 1,
+    },
+  ];
+  const sessionItems = Array.from({ length: 8 }, (_, index) => ({
+    id: `session-${index + 1}`,
+    learning_set_id: 'set-1',
+    curriculum_position: index + 1,
+  }));
+  const summary = buildLearningPath(
+    sessionItems,
+    sessionSets,
+    catalog(
+      result('session-1', 'known', false, '2020-01-01'),
+      result('session-2', 'known', false, '2020-01-01'),
+      result('session-3', 'known', false, '2020-01-01'),
+      result('session-4', 'needs_practice'),
+      result('session-5', 'needs_practice'),
+      result('session-6', 'needs_practice'),
+    ),
+  );
+  const session = buildLearningSession(summary);
+
+  assert.equal(session.items.length, 6);
+  assert.deepEqual(
+    session.items.map((item) => item.id),
+    [
+      'session-1',
+      'session-2',
+      'session-4',
+      'session-5',
+      'session-7',
+      'session-8',
+    ],
+  );
+  assert.equal(session.newRemaining, 0);
+  assert.equal(session.practiceRemaining, 2);
 });
