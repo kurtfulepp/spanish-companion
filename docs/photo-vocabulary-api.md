@@ -43,7 +43,7 @@ Successful response:
 }
 ```
 
-Zero to 15 distinct suggestions are returned. An empty array is a valid result for an unclear or uninformative image. The user must review and accept the words before a separate save operation persists them. The model's suggested title and all text are untrusted display content; render as text, never raw HTML.
+Zero to 20 distinct suggestions are returned. For a detailed photo, the model is instructed to aim for 12–20 useful, clearly visible objects; a sparse or unclear image may correctly return fewer rather than inventing vocabulary. An empty array is a valid result for an unclear or uninformative image. The user must review and accept the words before a separate save operation persists them. The model's suggested title and all text are untrusted display content; render as text, never raw HTML.
 
 Errors return `{ "error": "User-facing message", "code": "stable_code" }`. Statuses include 400 for an empty image, 401 for missing sign-in, 403 for browser cross-site requests, 413 for an oversized image, 415 for unsupported/invalid image signatures, 422 for refused or unreadable images, 429 for quota/provider limits, 503 for missing configuration or an unavailable quota service, and 502/504 for analysis failures/timeouts. All handler responses use `Cache-Control: no-store`.
 
